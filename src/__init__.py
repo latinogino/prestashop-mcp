@@ -1,0 +1,1 @@
+"""PrestaShop MCP Server Package"""
