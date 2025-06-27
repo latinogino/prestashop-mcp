@@ -51,7 +51,7 @@ This MCP Server enables complete management of your PrestaShop store through AI 
 
 ```bash
 # Clone repository
-git clone https://github.com/your-username/prestashop-mcp.git
+git clone https://github.com/latinogino/prestashop-mcp.git
 cd prestashop-mcp
 
 # Install dependencies (includes test dependencies)
