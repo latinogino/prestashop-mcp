@@ -42,10 +42,10 @@ dependencies = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/latinogino/prestashop-mcp"
-"Bug Reports" = "https://github.com/latinogino/prestashop-mcp/issues"
-"Source" = "https://github.com/latinogino/prestashop-mcp"
-"Documentation" = "https://github.com/latinogino/prestashop-mcp#readme"
+"Homepage" = "https://github.com/your-username/prestashop-mcp"
+"Bug Reports" = "https://github.com/your-username/prestashop-mcp/issues"
+"Source" = "https://github.com/your-username/prestashop-mcp"
+"Documentation" = "https://github.com/your-username/prestashop-mcp#readme"
 
 [project.scripts]
 prestashop-mcp = "prestashop_mcp.cli:main"
