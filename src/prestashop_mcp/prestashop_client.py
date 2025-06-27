@@ -172,14 +172,11 @@ class PrestaShopClient:
         reference: Optional[str] = None,
         weight: Optional[float] = None
     ) -> Dict[str, Any]:
-        """Create a new product in PrestaShop with FINAL corrected structure."""
+        """Create a new product in PrestaShop."""
         link_rewrite = self._generate_link_rewrite(name)
         
-        # CRITICAL FIX: Remove "quantity" field - it's not writable in products!
-        # Quantity is managed separately via stock_availables API
         product_data = {
             "product": {
-                # Basic identification
                 "name": [
                     {"id": 1, "value": name},
                     {"id": 2, "value": name}
@@ -188,73 +185,17 @@ class PrestaShopClient:
                     {"id": 1, "value": link_rewrite},
                     {"id": 2, "value": link_rewrite}
                 ],
-                
-                # Price and basic properties
                 "price": str(price),
                 "active": "1",
                 "available_for_order": "1",
                 "show_price": "1",
-                
-                # Category assignment
                 "id_category_default": category_id if category_id else "2",
-                
-                # Basic stock settings (NO direct quantity field!)
                 "minimal_quantity": "1",
                 "low_stock_alert": "0",
-                
-                # Physical properties with defaults
                 "weight": str(weight) if weight is not None else "0",
-                "width": "0",
-                "height": "0", 
-                "depth": "0",
-                
-                # Essential flags to avoid attribute creation
                 "is_virtual": "0",
                 "cache_default_attribute": "0",
                 "id_default_image": "0",
-                
-                # Tax and pricing
-                "id_tax_rules_group": "1",
-                "additional_shipping_cost": "0.00",
-                "unit_price": "0.000000",
-                "unity": "",
-                "unit_price_ratio": "0.000000",
-                "ecotax": "0.000000",
-                
-                # Behavior flags
-                "customizable": "0",
-                "uploadable_files": "0", 
-                "text_fields": "0",
-                "out_of_stock": "2",
-                "depends_on_stock": "0",
-                "advanced_stock_management": "0",
-                
-                # SEO and display
-                "indexed": "1",
-                "visibility": "both",
-                "condition": "new",
-                "show_condition": "0",
-                "online_only": "0",
-                
-                # Dates and status
-                "available_date": "0000-00-00",
-                "date_add": "",
-                "date_upd": "",
-                
-                # Pack and attachment flags
-                "cache_is_pack": "0",
-                "cache_has_attachments": "0",
-                "is_pack": "0",
-                
-                # Redirect
-                "redirect_type": "404",
-                "id_type_redirected": "0",
-                
-                # Manufacturer and supplier
-                "id_manufacturer": "0",
-                "id_supplier": "0",
-                
-                # Multi-language fields with empty defaults
                 "description": [
                     {"id": 1, "value": description if description else ""},
                     {"id": 2, "value": description if description else ""}
@@ -263,22 +204,6 @@ class PrestaShopClient:
                     {"id": 1, "value": description[:160] if description else ""},
                     {"id": 2, "value": description[:160] if description else ""}
                 ],
-                "available_now": [
-                    {"id": 1, "value": ""},
-                    {"id": 2, "value": ""}
-                ],
-                "available_later": [
-                    {"id": 1, "value": ""},
-                    {"id": 2, "value": ""}
-                ],
-                "meta_description": [
-                    {"id": 1, "value": ""},
-                    {"id": 2, "value": ""}
-                ],
-                "meta_keywords": [
-                    {"id": 1, "value": ""},
-                    {"id": 2, "value": ""}
-                ],
                 "meta_title": [
                     {"id": 1, "value": name[:70]},
                     {"id": 2, "value": name[:70]}
@@ -286,30 +211,407 @@ class PrestaShopClient:
             }
         }
         
-        # Set reference if provided
         if reference:
             product_data["product"]["reference"] = reference
         
-        # Add category associations if specified
-        if category_id:
-            product_data["product"]["associations"] = {
-                "categories": {
-                    "category": {
-                        "id": category_id
-                    }
-                }
-            }
-        
-        # Create product first
         result = await self._make_request('POST', 'products', data=product_data)
         
-        # SEPARATELY handle stock if quantity is provided
+        # Handle stock separately if quantity is provided
         if quantity is not None and 'product' in result and 'id' in result['product']:
             product_id = result['product']['id']
             try:
                 await self.update_product_stock(product_id, quantity)
             except Exception as e:
-                # Log stock update error but don't fail the product creation
                 logging.warning(f"Product created but stock update failed: {e}")
         
         return result
+    
+    async def update_product(
+        self, 
+        product_id: str, 
+        **kwargs
+    ) -> Dict[str, Any]:
+        """Update an existing product in PrestaShop."""
+        # First get the existing product
+        existing = await self._make_request('GET', f'products/{product_id}')
+        
+        if 'product' not in existing:
+            raise PrestaShopAPIError(f"Product {product_id} not found")
+        
+        product_data = existing['product']
+        
+        # Update fields with correct multilingual structure
+        if 'name' in kwargs:
+            product_data['name'] = [
+                {"id": 1, "value": kwargs['name']},
+                {"id": 2, "value": kwargs['name']}
+            ]
+            link_rewrite = self._generate_link_rewrite(kwargs['name'])
+            product_data['link_rewrite'] = [
+                {"id": 1, "value": link_rewrite},
+                {"id": 2, "value": link_rewrite}
+            ]
+        if 'price' in kwargs:
+            product_data['price'] = str(kwargs['price'])
+        if 'description' in kwargs:
+            product_data['description'] = [
+                {"id": 1, "value": kwargs['description']},
+                {"id": 2, "value": kwargs['description']}
+            ]
+        if 'category_id' in kwargs:
+            product_data['id_category_default'] = kwargs['category_id']
+        if 'active' in kwargs:
+            product_data['active'] = "1" if kwargs['active'] else "0"
+        
+        return await self._make_request(
+            'PUT', 
+            f'products/{product_id}', 
+            data={"product": product_data}
+        )
+    
+    async def delete_product(self, product_id: str) -> Dict[str, Any]:
+        """Delete a product from PrestaShop."""
+        return await self._make_request('DELETE', f'products/{product_id}')
+    
+    async def update_product_stock(
+        self, 
+        product_id: str, 
+        quantity: int
+    ) -> Dict[str, Any]:
+        """Update product stock quantity."""
+        # Get stock availables for this product
+        stock_params = {'filter[id_product]': product_id}
+        stock_response = await self._make_request('GET', 'stock_availables', params=stock_params)
+        
+        if 'stock_availables' in stock_response and stock_response['stock_availables']:
+            stock_id = stock_response['stock_availables'][0]['id']
+            
+            stock_data = {
+                "stock_available": {
+                    "id": stock_id,
+                    "id_product": product_id,
+                    "id_product_attribute": "0",
+                    "quantity": str(quantity),
+                    "id_shop": "1",
+                    "depends_on_stock": "0",
+                    "out_of_stock": "2"
+                }
+            }
+            
+            return await self._make_request('PUT', f'stock_availables/{stock_id}', data=stock_data)
+        else:
+            raise PrestaShopAPIError(f"Stock information not found for product {product_id}")
+    
+    async def update_product_price(
+        self, 
+        product_id: str, 
+        price: float,
+        wholesale_price: Optional[float] = None
+    ) -> Dict[str, Any]:
+        """Update product price."""
+        update_data = {'price': price}
+        if wholesale_price is not None:
+            update_data['wholesale_price'] = wholesale_price
+        
+        return await self.update_product(product_id, **update_data)
+
+    # ============================================================================
+    # CATEGORY MANAGEMENT
+    # ============================================================================
+    
+    async def get_categories(
+        self, 
+        limit: int = 10,
+        parent_id: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Get categories from PrestaShop."""
+        params = {'limit': limit}
+        
+        if parent_id:
+            params['filter[id_parent]'] = parent_id
+        
+        return await self._make_request('GET', 'categories', params=params)
+    
+    async def create_category(
+        self,
+        name: str,
+        description: Optional[str] = None,
+        parent_id: str = "2",
+        active: bool = True,
+        link_rewrite: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Create a new category in PrestaShop."""
+        if not link_rewrite:
+            link_rewrite = self._generate_link_rewrite(name)
+        
+        category_data = {
+            "category": {
+                "name": [
+                    {"id": 1, "value": name},
+                    {"id": 2, "value": name}
+                ],
+                "link_rewrite": [
+                    {"id": 1, "value": link_rewrite},
+                    {"id": 2, "value": link_rewrite}
+                ],
+                "id_parent": parent_id,
+                "active": "1" if active else "0"
+            }
+        }
+        
+        if description:
+            category_data["category"]["description"] = [
+                {"id": 1, "value": description},
+                {"id": 2, "value": description}
+            ]
+        
+        return await self._make_request('POST', 'categories', data=category_data)
+    
+    async def update_category(
+        self, 
+        category_id: str, 
+        **kwargs
+    ) -> Dict[str, Any]:
+        """Update an existing category in PrestaShop."""
+        # First get the existing category
+        existing = await self._make_request('GET', f'categories/{category_id}')
+        
+        if 'category' not in existing:
+            raise PrestaShopAPIError(f"Category {category_id} not found")
+        
+        # Create minimal category data with only writable core fields
+        category_data = {
+            "id": str(category_id),
+            "id_parent": existing['category'].get('id_parent', '2'),
+            "active": existing['category'].get('active', '1'),
+            "name": existing['category'].get('name', []),
+            "link_rewrite": existing['category'].get('link_rewrite', []),
+            "description": existing['category'].get('description', [])
+        }
+        
+        # Update only the requested fields with correct multilingual structure
+        if 'name' in kwargs:
+            category_data['name'] = [
+                {"id": 1, "value": kwargs['name']},
+                {"id": 2, "value": kwargs['name']}
+            ]
+            link_rewrite = self._generate_link_rewrite(kwargs['name'])
+            category_data['link_rewrite'] = [
+                {"id": 1, "value": link_rewrite},
+                {"id": 2, "value": link_rewrite}
+            ]
+        
+        if 'description' in kwargs:
+            category_data['description'] = [
+                {"id": 1, "value": kwargs['description']},
+                {"id": 2, "value": kwargs['description']}
+            ]
+        
+        if 'active' in kwargs:
+            category_data['active'] = "1" if kwargs['active'] else "0"
+        
+        return await self._make_request(
+            'PUT', 
+            f'categories/{category_id}', 
+            data={"category": category_data}
+        )
+    
+    async def delete_category(self, category_id: str) -> Dict[str, Any]:
+        """Delete a category from PrestaShop."""
+        return await self._make_request('DELETE', f'categories/{category_id}')
+
+    # ============================================================================
+    # CUSTOMER MANAGEMENT
+    # ============================================================================
+    
+    async def get_customers(
+        self, 
+        limit: int = 10, 
+        email: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Get customers from PrestaShop."""
+        params = {'limit': limit}
+        
+        if email:
+            params['filter[email]'] = f"[{email}]%"
+        
+        return await self._make_request('GET', 'customers', params=params)
+    
+    async def create_customer(
+        self,
+        email: str,
+        firstname: str,
+        lastname: str,
+        password: str,
+        active: bool = True
+    ) -> Dict[str, Any]:
+        """Create a new customer in PrestaShop."""
+        customer_data = {
+            "customer": {
+                "email": email,
+                "firstname": firstname,
+                "lastname": lastname,
+                "passwd": password,
+                "active": "1" if active else "0",
+                "id_default_group": "3"  # Default customer group
+            }
+        }
+        
+        return await self._make_request('POST', 'customers', data=customer_data)
+    
+    async def update_customer(
+        self, 
+        customer_id: str, 
+        **kwargs
+    ) -> Dict[str, Any]:
+        """Update an existing customer in PrestaShop."""
+        # First get the existing customer
+        existing = await self._make_request('GET', f'customers/{customer_id}')
+        
+        if 'customer' not in existing:
+            raise PrestaShopAPIError(f"Customer {customer_id} not found")
+        
+        # Create minimal customer data with only essential fields
+        customer_data = {
+            "id": str(customer_id),
+            "email": existing['customer'].get('email', ''),
+            "firstname": existing['customer'].get('firstname', ''),
+            "lastname": existing['customer'].get('lastname', ''),
+            "id_default_group": existing['customer'].get('id_default_group', '3'),
+            "active": existing['customer'].get('active', '1'),
+            "passwd": existing['customer'].get('passwd', ''),
+            "secure_key": existing['customer'].get('secure_key', ''),
+            "date_add": existing['customer'].get('date_add', ''),
+            "date_upd": existing['customer'].get('date_upd', ''),
+        }
+        
+        # Update only the provided fields
+        if 'email' in kwargs:
+            customer_data['email'] = kwargs['email']
+        if 'firstname' in kwargs:
+            customer_data['firstname'] = kwargs['firstname']
+        if 'lastname' in kwargs:
+            customer_data['lastname'] = kwargs['lastname']
+        if 'active' in kwargs:
+            customer_data['active'] = "1" if kwargs['active'] else "0"
+        
+        return await self._make_request(
+            'PUT', 
+            f'customers/{customer_id}', 
+            data={"customer": customer_data}
+        )
+
+    # ============================================================================
+    # ORDER MANAGEMENT
+    # ============================================================================
+    
+    async def get_orders(
+        self, 
+        limit: int = 10, 
+        customer_id: Optional[str] = None,
+        status: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Get orders from PrestaShop."""
+        params = {'limit': limit}
+        
+        if customer_id:
+            params['filter[id_customer]'] = customer_id
+        if status:
+            params['filter[current_state]'] = status
+        
+        return await self._make_request('GET', 'orders', params=params)
+    
+    async def update_order_status(
+        self, 
+        order_id: str, 
+        status_id: str
+    ) -> Dict[str, Any]:
+        """Update order status in PrestaShop."""
+        # Create order history entry
+        history_data = {
+            "order_history": {
+                "id_order": order_id,
+                "id_order_state": status_id,
+                "id_employee": "1"  # Default employee
+            }
+        }
+        
+        return await self._make_request('POST', 'order_histories', data=history_data)
+    
+    async def get_order_states(self) -> Dict[str, Any]:
+        """Retrieve available order states/statuses."""
+        return await self._make_request('GET', 'order_states')
+
+    # ============================================================================
+    # CONFIGURATION AND UTILITY
+    # ============================================================================
+    
+    async def get_configurations(
+        self, 
+        filter_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Get shop configurations from PrestaShop."""
+        params = {}
+        
+        if filter_name:
+            params['filter[name]'] = f"[{filter_name}]%"
+        
+        return await self._make_request('GET', 'configurations', params=params)
+    
+    async def get_shop_info(self) -> Dict[str, Any]:
+        """Get general shop information and statistics."""
+        try:
+            # Get basic shop info
+            configs = await self.get_configurations()
+            
+            # Get product count
+            products = await self._make_request('GET', 'products', params={'limit': 1})
+            product_count = 0
+            if 'products' in products:
+                product_count = len(products.get('products', []))
+            
+            # Get category count
+            categories = await self._make_request('GET', 'categories', params={'limit': 1})
+            category_count = 0
+            if 'categories' in categories:
+                category_count = len(categories.get('categories', []))
+            
+            # Get customer count
+            customers = await self._make_request('GET', 'customers', params={'limit': 1})
+            customer_count = 0
+            if 'customers' in customers:
+                customer_count = len(customers.get('customers', []))
+            
+            # Get order count
+            orders = await self._make_request('GET', 'orders', params={'limit': 1})
+            order_count = 0
+            if 'orders' in orders:
+                order_count = len(orders.get('orders', []))
+            
+            return {
+                "shop_info": {
+                    "product_count": product_count,
+                    "category_count": category_count,
+                    "customer_count": customer_count,
+                    "order_count": order_count
+                },
+                "configurations": configs
+            }
+        
+        except Exception as e:
+            return {"error": f"Could not retrieve shop info: {str(e)}"}
+    
+    # ============================================================================
+    # SESSION MANAGEMENT
+    # ============================================================================
+    
+    async def close(self):
+        """Close the HTTP session."""
+        if self.session and not self.session.closed:
+            await self.session.close()
+    
+    async def __aenter__(self):
+        return self
+    
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.close()
