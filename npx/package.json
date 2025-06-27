@@ -1,0 +1,26 @@
+{
+  "name": "prestashop-mcp-npx",
+  "version": "1.0.0",
+  "description": "NPX wrapper for PrestaShop MCP Python server",
+  "bin": {
+    "prestashop-mcp": "./wrapper.js"
+  },
+  "scripts": {
+    "postinstall": "echo 'NPX wrapper installed. Ensure Python and prestashop-mcp Python package are available.'"
+  },
+  "dependencies": {
+    "commander": "^11.0.0",
+    "which": "^4.0.0"
+  },
+  "keywords": ["prestashop", "mcp", "wrapper", "python", "npx"],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/latinogino/prestashop-mcp.git",
+    "directory": "npx"
+  },
+  "author": "PrestaShop MCP Team",
+  "license": "MIT"
+}

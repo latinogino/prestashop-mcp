@@ -47,7 +47,7 @@ This MCP Server enables complete management of your PrestaShop store through AI 
 
 ## 📋 Installation
 
-### 🏗️ Development Environment
+### 🐍 Python Installation (Recommended)
 
 ```bash
 # Clone repository
@@ -60,6 +60,24 @@ pip install -r requirements.txt
 # Install package
 pip install -e .
 ```
+
+### 📦 NPX Installation (Alternative)
+
+For Node.js users, an NPX wrapper is available:
+
+```bash
+# Clone repository
+git clone https://github.com/your-username/prestashop-mcp.git
+cd prestashop-mcp/npx
+
+# Install NPX wrapper globally
+npm install -g .
+
+# Use with NPX
+npx prestashop-mcp --shop-url "https://your-shop.com" --api-key "YOUR_API_KEY"
+```
+
+See [npx/README.md](npx/README.md) for detailed NPX usage instructions.
 
 ### ⚙️ Configuration
 
@@ -78,6 +96,7 @@ LOG_LEVEL=INFO
 
 ### 🤖 With Claude Desktop
 
+#### Python Version
 Add this configuration to `claude_desktop_config.json`:
 
 ```json
@@ -96,8 +115,25 @@ Add this configuration to `claude_desktop_config.json`:
 }
 ```
 
+#### NPX Version
+```json
+{
+  "mcpServers": {
+    "prestashop": {
+      "command": "npx",
+      "args": ["prestashop-mcp"],
+      "env": {
+        "PRESTASHOP_SHOP_URL": "https://your-shop.example.com",
+        "PRESTASHOP_API_KEY": "YOUR_API_KEY"
+      }
+    }
+  }
+}
+```
+
 ### 💻 CLI Usage
 
+#### Python
 ```bash
 # With environment variables
 prestashop-mcp
@@ -107,6 +143,15 @@ prestashop-mcp --shop-url https://your-shop.com --api-key YOUR_API_KEY
 
 # Debug mode
 prestashop-mcp --log-level DEBUG
+```
+
+#### NPX
+```bash
+# After global installation
+prestashop-mcp --shop-url https://your-shop.com --api-key YOUR_API_KEY
+
+# Direct NPX usage
+npx prestashop-mcp --shop-url https://your-shop.com --api-key YOUR_API_KEY
 ```
 
 ### 🧪 Testing
@@ -131,6 +176,10 @@ prestashop-mcp/
 │   ├── prestashop_client.py             # PrestaShop API Client
 │   ├── config.py                        # Configuration Management
 │   └── cli.py                          # Command Line Interface
+├── npx/                                 # NPX Wrapper
+│   ├── package.json                     # NPX Package Configuration
+│   ├── wrapper.js                       # NPX Wrapper Script
+│   └── README.md                        # NPX Usage Instructions
 ├── test_crud_operations.py              # CRUD Test Suite
 ├── tests/                               # Unit Tests
 ├── README.md                            # Documentation
@@ -198,6 +247,7 @@ MIT License - see [LICENSE](LICENSE) for details.
 - ⚙️ Store statistics and configuration
 - 🛡️ Production-ready with comprehensive tests
 - 📖 Complete documentation with practical examples
+- 🚀 **NEW**: NPX wrapper for Node.js users
 
 ---
 
