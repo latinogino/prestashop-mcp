@@ -1,0 +1,1 @@
+"""Tests for PrestaShop MCP Server"""
