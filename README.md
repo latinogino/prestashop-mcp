@@ -1,84 +1,84 @@
 # PrestaShop MCP Server
 
-Ein professioneller Model Context Protocol (MCP) Server für die vollständige Verwaltung von PrestaShop E-Commerce Shops.
+A professional Model Context Protocol (MCP) Server for complete management of PrestaShop e-commerce stores.
 
-## 🚀 Überblick
+## 🚀 Overview
 
-Dieser MCP Server ermöglicht die vollständige Verwaltung Ihres PrestaShop Shops über AI-Anwendungen wie Claude Desktop. Mit spezialisierten Tools können Sie alle Aspekte Ihres E-Commerce-Geschäfts verwalten - von Produkten und Kategorien bis hin zu Kunden und Bestellungen.
+This MCP Server enables complete management of your PrestaShop store through AI applications like Claude Desktop. With specialized tools, you can manage all aspects of your e-commerce business - from products and categories to customers and orders.
 
 ## ✨ Features
 
-- **🛍️ Vollständige Shop-Verwaltung** - Tools für alle E-Commerce-Bereiche
-- **🏗️ MCP Protocol Compliance** für nahtlose AI-Integration
-- **⚡ Async/Await Architektur** für höchste Performance
-- **🛡️ Umfassende Fehlerbehandlung** und Validierung
-- **🔧 Production-Ready** mit vollständiger Test-Suite
-- **📖 Umfassende Dokumentation** mit praktischen Beispielen
+- **🛍️ Complete Store Management** - Tools for all e-commerce areas
+- **🏗️ MCP Protocol Compliance** for seamless AI integration
+- **⚡ Async/Await Architecture** for maximum performance
+- **🛡️ Comprehensive Error Handling** and validation
+- **🔧 Production-Ready** with complete test suite
+- **📖 Comprehensive Documentation** with practical examples
 
-## 🛠️ Verfügbare Tools
+## 🛠️ Available Tools
 
-### 📦 Produkt-Management
-- `get_products` - Produkte abrufen und filtern
-- `create_product` - Neue Produkte erstellen (mit Lager, Referenz, Gewicht)
-- `update_product` - Produkte vollständig bearbeiten
-- `delete_product` - Produkte entfernen
-- `update_product_stock` - Lagerbestände verwalten
-- `update_product_price` - Preise und Einkaufspreise aktualisieren
+### 📦 Product Management
+- `get_products` - Retrieve and filter products
+- `create_product` - Create new products (with inventory, reference, weight)
+- `update_product` - Fully edit products
+- `delete_product` - Remove products
+- `update_product_stock` - Manage inventory levels
+- `update_product_price` - Update prices and wholesale prices
 
-### 🏷️ Kategorie-Management
-- `get_categories` - Kategorien abrufen (mit Hierarchie-Filter)
-- `create_category` - Neue Kategorien erstellen
-- `update_category` - Kategorien bearbeiten
-- `delete_category` - Kategorien entfernen
+### 🏷️ Category Management
+- `get_categories` - Retrieve categories (with hierarchy filter)
+- `create_category` - Create new categories
+- `update_category` - Edit categories
+- `delete_category` - Remove categories
 
-### 👥 Kunden-Management
-- `get_customers` - Kunden abrufen und filtern
-- `create_customer` - Neue Kunden anlegen
-- `update_customer` - Kundendaten bearbeiten
+### 👥 Customer Management
+- `get_customers` - Retrieve and filter customers
+- `create_customer` - Create new customers
+- `update_customer` - Edit customer data
 
-### 📋 Bestell-Management
-- `get_orders` - Bestellungen abrufen und filtern
-- `update_order_status` - Bestellstatus ändern
-- `get_order_states` - Verfügbare Status abrufen
+### 📋 Order Management
+- `get_orders` - Retrieve and filter orders
+- `update_order_status` - Change order status
+- `get_order_states` - Retrieve available statuses
 
-### ⚙️ Shop-Verwaltung
-- `test_connection` - API-Verbindung testen
-- `get_shop_info` - Umfassende Shop-Statistiken
+### ⚙️ Store Administration
+- `test_connection` - Test API connection
+- `get_shop_info` - Comprehensive store statistics
 
 ## 📋 Installation
 
-### 🏗️ Entwicklungsumgebung
+### 🏗️ Development Environment
 
 ```bash
-# Repository klonen
-git clone https://github.com/latinogino/prestashop-mcp.git
+# Clone repository
+git clone https://github.com/your-username/prestashop-mcp.git
 cd prestashop-mcp
 
-# Dependencies installieren
+# Install dependencies
 pip install -r requirements.txt
 
-# Package installieren
+# Install package
 pip install -e .
 ```
 
-### ⚙️ Konfiguration
+### ⚙️ Configuration
 
-Erstellen Sie eine `.env` Datei basierend auf `.env.example`:
+Create a `.env` file based on `.env.example`:
 
 ```bash
 # PrestaShop Configuration
-PRESTASHOP_SHOP_URL=https://ihr-shop.example.com
-PRESTASHOP_API_KEY=IHR_API_KEY
+PRESTASHOP_SHOP_URL=https://your-shop.example.com
+PRESTASHOP_API_KEY=YOUR_API_KEY
 
 # Logging
 LOG_LEVEL=INFO
 ```
 
-## 🎯 Verwendung
+## 🎯 Usage
 
-### 🤖 Mit Claude Desktop
+### 🤖 With Claude Desktop
 
-Fügen Sie diese Konfiguration zu `claude_desktop_config.json` hinzu:
+Add this configuration to `claude_desktop_config.json`:
 
 ```json
 {
@@ -88,41 +88,41 @@ Fügen Sie diese Konfiguration zu `claude_desktop_config.json` hinzu:
       "args": ["-m", "prestashop_mcp.prestashop_mcp_server"],
       "cwd": "/path/to/prestashop-mcp",
       "env": {
-        "PRESTASHOP_SHOP_URL": "https://ihr-shop.example.com",
-        "PRESTASHOP_API_KEY": "IHR_API_KEY"
+        "PRESTASHOP_SHOP_URL": "https://your-shop.example.com",
+        "PRESTASHOP_API_KEY": "YOUR_API_KEY"
       }
     }
   }
 }
 ```
 
-### 💻 CLI Verwendung
+### 💻 CLI Usage
 
 ```bash
-# Mit Environment Variablen
+# With environment variables
 prestashop-mcp
 
-# Mit direkten Parametern
-prestashop-mcp --shop-url https://ihr-shop.com --api-key IHR_API_KEY
+# With direct parameters
+prestashop-mcp --shop-url https://your-shop.com --api-key YOUR_API_KEY
 
-# Debug Modus
+# Debug mode
 prestashop-mcp --log-level DEBUG
 ```
 
 ### 🧪 Testing
 
 ```bash
-# Vollständige CRUD-Tests ausführen
+# Run complete CRUD tests
 python test_crud_operations.py
 
-# Unit Tests
+# Unit tests
 pytest
 
-# Tests mit Coverage
+# Tests with coverage
 pytest --cov=src/prestashop_mcp --cov-report=html
 ```
 
-## 📊 Projektstruktur
+## 📊 Project Structure
 
 ```
 prestashop-mcp/
@@ -138,67 +138,67 @@ prestashop-mcp/
 └── requirements.txt                     # Dependencies
 ```
 
-## 📖 API Dokumentation
+## 📖 API Documentation
 
 ### PrestaShop API
 
-Die vollständige PrestaShop API Dokumentation:
+Complete PrestaShop API documentation:
 - **[PrestaShop DevDocs - Webservice](https://devdocs.prestashop-project.org/8/webservice/)**
 
-### Authentifizierung
+### Authentication
 
 ```bash
-curl -u "API_KEY:" https://ihr-shop.com/api/configurations?output_format=JSON
+curl -u "API_KEY:" https://your-shop.com/api/configurations?output_format=JSON
 ```
 
-### Wichtige Endpoints
+### Important Endpoints
 
-- **Produkte**: `/api/products`
-- **Kategorien**: `/api/categories`
-- **Kunden**: `/api/customers`
-- **Bestellungen**: `/api/orders`
-- **Lagerbestände**: `/api/stock_availables`
-- **Bestellstatus**: `/api/order_states`
+- **Products**: `/api/products`
+- **Categories**: `/api/categories`
+- **Customers**: `/api/customers`
+- **Orders**: `/api/orders`
+- **Stock**: `/api/stock_availables`
+- **Order Status**: `/api/order_states`
 
-## 🧪 Entwicklung
+## 🧪 Development
 
-### 🏗️ Entwicklungsumgebung
+### 🏗️ Development Environment
 
 ```bash
 # Development Dependencies
 pip install -r requirements.txt
 pip install -r tests/requirements.txt
 
-# Tests ausführen
+# Run tests
 pytest
 
-# Tests mit Coverage
+# Tests with coverage
 pytest --cov=src/prestashop_mcp --cov-report=html
 ```
 
-## 📖 Ressourcen
+## 📖 Resources
 
 - **[PrestaShop Official Documentation](https://devdocs.prestashop-project.org/)**
 - **[Model Context Protocol Specification](https://modelcontextprotocol.io/)**
 - **[Claude Desktop MCP Integration](https://docs.anthropic.com/)**
-- **[GitHub Repository](https://github.com/latinogino/prestashop-mcp)**
+- **[GitHub Repository](https://github.com/your-username/prestashop-mcp)**
 
-## 📄 Lizenz
+## 📄 License
 
-MIT License - siehe [LICENSE](LICENSE) für Details.
+MIT License - see [LICENSE](LICENSE) for details.
 
 ## 📝 Changelog
 
 ### v1.0.0 - Production Release
-- ✨ Vollständige Shop-Verwaltung mit professionellen Tools
-- 📦 Erweiterte Produkt-Features (Lager, Preise, Referenzen)
-- 🏷️ Kategorie-Management mit Hierarchie-Support
-- 👥 Kunden-Verwaltung (Erstellen, Bearbeiten)
-- 📋 Bestell-Management mit Status-Updates
-- ⚙️ Shop-Statistiken und Konfiguration
-- 🛡️ Production-Ready mit umfassenden Tests
-- 📖 Vollständige Dokumentation mit Praxis-Beispielen
+- ✨ Complete store management with professional tools
+- 📦 Enhanced product features (inventory, prices, references)
+- 🏷️ Category management with hierarchy support
+- 👥 Customer management (create, edit)
+- 📋 Order management with status updates
+- ⚙️ Store statistics and configuration
+- 🛡️ Production-ready with comprehensive tests
+- 📖 Complete documentation with practical examples
 
 ---
 
-**🎯 Verwalten Sie Ihren kompletten PrestaShop über natürliche Sprache mit Claude Desktop!**
+**🎯 Manage your complete PrestaShop through natural language with Claude Desktop!**
