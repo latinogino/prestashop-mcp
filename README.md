@@ -54,7 +54,7 @@ This MCP Server enables complete management of your PrestaShop store through AI 
 git clone https://github.com/your-username/prestashop-mcp.git
 cd prestashop-mcp
 
-# Install dependencies
+# Install dependencies (includes test dependencies)
 pip install -r requirements.txt
 
 # Install package
@@ -112,13 +112,13 @@ prestashop-mcp --log-level DEBUG
 ### 🧪 Testing
 
 ```bash
-# Run complete CRUD tests
-python test_crud_operations.py
+# Run comprehensive CRUD tests
+python tests/test_crud_operations.py
 
-# Unit tests
+# Run unit tests
 pytest
 
-# Tests with coverage
+# Run tests with coverage
 pytest --cov=src/prestashop_mcp --cov-report=html
 ```
 
@@ -131,11 +131,12 @@ prestashop-mcp/
 │   ├── prestashop_client.py             # PrestaShop API Client
 │   ├── config.py                        # Configuration Management
 │   └── cli.py                          # Command Line Interface
-├── test_crud_operations.py              # CRUD Test Suite
-├── tests/                               # Unit Tests
+├── tests/                               # All Tests
+│   ├── test_config.py                   # Unit Tests
+│   └── test_crud_operations.py          # CRUD Integration Tests
 ├── README.md                            # Documentation
 ├── pyproject.toml                       # Package Configuration
-└── requirements.txt                     # Dependencies
+└── requirements.txt                     # All Dependencies
 ```
 
 ## 📖 API Documentation
@@ -165,15 +166,17 @@ curl -u "API_KEY:" https://your-shop.com/api/configurations?output_format=JSON
 ### 🏗️ Development Environment
 
 ```bash
-# Development Dependencies
+# All dependencies (including test dependencies) are in requirements.txt
 pip install -r requirements.txt
-pip install -r tests/requirements.txt
 
 # Run tests
 pytest
 
-# Tests with coverage
+# Run tests with coverage
 pytest --cov=src/prestashop_mcp --cov-report=html
+
+# Run comprehensive integration tests
+python tests/test_crud_operations.py
 ```
 
 ## 📖 Resources
