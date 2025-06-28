@@ -19,6 +19,7 @@ This MCP Server enables complete management of your PrestaShop store through AI 
 
 ### 📦 Product Management
 - `get_products` - Retrieve and filter products
+- `get_product_details` - **NEW** Get comprehensive product information by ID including stock and category details
 - `create_product` - Create new products (with inventory, reference, weight)
 - `update_product` - Fully edit products
 - `delete_product` - Remove products
@@ -141,9 +142,9 @@ Add this configuration to `claude_desktop_config.json`:
 {
   "mcpServers": {
     "prestashop": {
-      "command": "C:\\path\\to\\prestashop-mcp\\venv_prestashop\\Scripts\\python.exe",
+      "command": "C:\\\\path\\\\to\\\\prestashop-mcp\\\\venv_prestashop\\\\Scripts\\\\python.exe",
       "args": ["-m", "prestashop_mcp.prestashop_mcp_server"],
-      "cwd": "C:\\path\\to\\prestashop-mcp",
+      "cwd": "C:\\\\path\\\\to\\\\prestashop-mcp",
       "env": {
         "PRESTASHOP_SHOP_URL": "https://your-shop.example.com",
         "PRESTASHOP_API_KEY": "YOUR_API_KEY"
@@ -221,6 +222,23 @@ pytest
 # Run tests with coverage
 pytest --cov=src/prestashop_mcp --cov-report=html
 ```
+
+## 🆕 New Product Details Feature
+
+The `get_product_details` tool provides comprehensive product information including:
+
+- **Complete Product Data**: All product fields including multilingual content
+- **Stock Information**: Current inventory levels and availability
+- **Category Details**: Associated category information
+- **Flexible Display**: Optional field selection for optimized queries
+
+### Example Usage with Claude:
+
+```
+"Get detailed information for product ID 15 including stock and category data"
+```
+
+This will return complete product information, stock levels, and category details in a single comprehensive response.
 
 ## 🔧 Troubleshooting
 
@@ -347,6 +365,12 @@ python tests/test_crud_operations.py
 MIT License - see [LICENSE](LICENSE) for details.
 
 ## 📝 Changelog
+
+### v1.1.0 - Enhanced Product Details
+- ✨ **NEW**: `get_product_details` method for comprehensive product information
+- 📊 Enhanced product queries with stock and category information
+- 🔍 Flexible field selection with display parameter
+- 🏗️ Improved API client architecture for detailed data retrieval
 
 ### v1.0.1 - Improved Installation
 - 📖 Enhanced installation documentation with virtual environment setup
