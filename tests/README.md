@@ -1,5 +1,10 @@
 # 🔄 Update und Test Anleitung - PrestaShop MCP Server
 
+## 🚨 KRITISCHER BUGFIX VERFÜGBAR - Sofort aktualisieren!
+
+### ⚡ **WICHTIGE ÄNDERUNG (Version 2.1.0):**
+Das **XML-Parsing Problem wurde endgültig gelöst**. Der MCP Server verwendet jetzt korrekt den PrestaShopClient für alle API-Operationen.
+
 ## Schnelle Update-Anleitung für bestehende Installationen
 
 ### Voraussetzungen
@@ -7,26 +12,26 @@
 - Aktive virtuelle Python-Umgebung
 - Zugriff auf das GitHub Repository
 
-### 1. Server stoppen und Updates laden
+### 1. Server stoppen und kritisches Update laden
 
 ```powershell
 # 1. Aktuellen MCP Server stoppen
 # -> Schließe Claude Desktop oder stoppe den Server dort
 
-# 2. Repository mit neuen Bugfixes aktualisieren
+# 2. Repository mit kritischem XML-Fix aktualisieren
 git pull origin main
 
-# 3. Aktualisierte Version installieren
+# 3. Aktualisierte Version installieren (WICHTIG für XML-Fix)
 pip install -e .
 
 # 4. Installation verifizieren
-python -c "import prestashop_mcp; print('✅ Neue Version erfolgreich installiert')"
+python -c "import prestashop_mcp; print('✅ Version 2.1.0 mit XML-Fix erfolgreich installiert')"
 ```
 
-### 2. API-Verbindung testen
+### 2. XML-Integration testen
 
 ```powershell
-# Direkte API-Verbindung testen
+# Direkte API-Verbindung mit XML-Support testen
 python -c "
 import asyncio
 from prestashop_mcp.config import Config
@@ -36,73 +41,110 @@ async def test():
     config = Config()
     async with PrestaShopClient(config) as client:
         result = await client.get_shop_info()
-        print('✅ API-Verbindung erfolgreich:', result.get('shop_info', {}))
+        print('✅ API-Verbindung mit XML-Support erfolgreich:', result.get('shop_info', {}))
+        
+        # Test XML-Konvertierung
+        xml_test = client._dict_to_xml({'test': 'value'})
+        print('✅ XML-Konvertierung funktioniert:', '<?xml' in xml_test)
 
 asyncio.run(test())
 "
 ```
 
-### 3. Claude Desktop Konfiguration
+### 3. Claude Desktop neu starten
 
-Deine bestehende `~/.claude_desktop_config.json` bleibt unverändert:
+```powershell
+# Deine bestehende Konfiguration bleibt unverändert:
+# C:\Users\{Username}\.claude_desktop_config.json
 
-```json
-{
-  "mcpServers": {
-    "prestashop": {
-      "command": "C:\\Users\\{Username}\\GitHub\\prestashop-mcp\\venv_prestashop\\Scripts\\python.exe",
-      "args": ["-m", "prestashop_mcp.prestashop_mcp_server"],
-      "cwd": "C:\\Users\\{Username}\\GitHub\\prestashop-mcp",
-      "env": {
-        "PRESTASHOP_SHOP_URL": "https://shop.ginos.cloud",
-        "PRESTASHOP_API_KEY": "XVM6ZNX6IQI42ILGXRXFF62FZCGE3X7N"
-      }
-    }
-  }
-}
+# WICHTIG: Starte Claude Desktop neu für den XML-Fix
+Write-Host "🔄 Starte Claude Desktop neu - XML-Parsing Problem ist jetzt behoben!"
 ```
 
-**Wichtig**: Starte Claude Desktop neu, um die neue Version zu aktivieren.
+### 4. Funktionalität testen
+
+In Claude Desktop kannst du nun diese Funktionen **erfolgreich** testen:
+
+```
+✅ Erstelle ein neues Produkt (sollte sofort im Backend sichtbar sein)
+✅ Aktualisiere Produktbestände (ohne XML-Parsing-Fehler)  
+✅ Erstelle neue Kategorien (ohne PHP-Warnungen)
+✅ Alle POST/PUT-Operationen funktionieren jetzt korrekt
+```
+
+## 🎯 Was in Version 2.1.0 behoben wurde
+
+### ✅ **XML-Parsing Problem komplett gelöst**
+- **ROOT CAUSE gefunden**: MCP Server verwendete eigene JSON-API-Calls statt PrestaShopClient
+- **SOLUTION**: Komplette Integration mit PrestaShopClient für alle Operationen
+- **RESULT**: Alle POST/PUT-Operationen senden jetzt korrektes XML
+
+### ✅ **Konkrete Verbesserungen**
+
+#### **1. Produkterstellung funktioniert vollständig**
+```
+Vorher: ❌ "Start tag expected, '<' not found"
+Nachher: ✅ Produkt sofort im Backend sichtbar mit state=1
+```
+
+#### **2. Stock-Updates ohne Fehler**
+```
+Vorher: ❌ "Opening and ending tag mismatch"  
+Nachher: ✅ Lagermenge wird korrekt aktualisiert
+```
+
+#### **3. Kategorie-Erstellung ohne Warnungen**
+```
+Vorher: ❌ "Undefined array key 2"
+Nachher: ✅ Vollständige mehrsprachige Feldinitialisierung
+```
+
+#### **4. Verbesserte Architektur**
+```
+Vorher: MCP Server → direkte JSON API-Calls → ❌ Fehler
+Nachher: MCP Server → PrestaShopClient → XML API-Calls → ✅ Erfolg
+```
 
 ## 🧪 Funktionalitätstests
 
-### Test 1: Produkterstellung mit Backend-Sichtbarkeit
+### Test 1: Produkterstellung mit Backend-Sichtbarkeit ✅
 
 ```
 Frage in Claude Desktop:
-"Erstelle ein Testprodukt 'Test Widget 2025' für 29.99€ in Kategorie 2"
+"Erstelle ein Testprodukt 'XML Test Widget 2025' für 39.99€ in Kategorie 2"
 
-Erwartetes Ergebnis:
-✅ Produkt wird erfolgreich erstellt
+Erwartetes Ergebnis (NEU):
+✅ Produkt wird erfolgreich erstellt (OHNE XML-Fehler)
 ✅ Produkt ist sofort im PrestaShop Backend sichtbar
 ✅ Alle Felder sind korrekt initialisiert
+✅ state=1 für Backend-Sichtbarkeit
 ```
 
-### Test 2: Stock-Update ohne XML-Parsing-Fehler
+### Test 2: Stock-Update ohne XML-Parsing-Fehler ✅
 
 ```
 Frage in Claude Desktop:
-"Aktualisiere die Lagermenge des letzten Produkts auf 50 Stück"
+"Aktualisiere die Lagermenge des letzten Produkts auf 25 Stück"
 
-Erwartetes Ergebnis:
-✅ Stock-Update erfolgt ohne Fehler
-✅ Keine XML-Parsing-Warnungen in den Logs
+Erwartetes Ergebnis (NEU):
+✅ Stock-Update erfolgt OHNE XML-Parsing-Fehler
+✅ Korrekte XML-Struktur für stock_available
 ✅ Neue Lagermenge ist korrekt gesetzt
 ```
 
-### Test 3: Kategorie-Erstellung ohne PHP-Warnungen
+### Test 3: Kategorie-Erstellung ohne PHP-Warnungen ✅
 
 ```
 Frage in Claude Desktop:
-"Erstelle eine neue Kategorie 'Test Kategorie 2025' mit Beschreibung"
+"Erstelle eine neue Kategorie 'XML Test Kategorie 2025'"
 
-Erwartetes Ergebnis:
+Erwartetes Ergebnis (NEU):
 ✅ Kategorie wird erfolgreich erstellt
-✅ Keine PHP-Warnungen bezüglich undefined array keys
-✅ Alle mehrsprachigen Felder korrekt initialisiert
+✅ KEINE PHP-Warnungen bezüglich undefined array keys
+✅ Vollständige mehrsprachige Feldinitialisierung
 ```
 
-### Test 4: API-Authentifizierung direkt
+### Test 4: API-Authentifizierung direkt ✅
 
 ```bash
 # Direkte API-Abfrage mit curl
@@ -113,40 +155,65 @@ curl -u "XVM6ZNX6IQI42ILGXRXFF62FZCGE3X7N:" https://shop.ginos.cloud/api/configu
 # ✅ Konfigurationsdaten werden korrekt zurückgegeben
 ```
 
-## 🔧 Behobene Kritische Probleme
+## 🔧 Technische Details der Fixes
 
-### ✅ Fehlende Backend-Sichtbarkeit
-- **Problem**: Produkte waren mit `state: 0` als Entwurf gespeichert
-- **Fix**: Automatische `state: 1` Initialisierung für sofortige Backend-Sichtbarkeit
+### **Behobenes XML-Parsing Problem:**
 
-### ✅ XML-Parsing Fehler
-- **Problem**: JSON wurde statt XML gesendet, falsche Content-Type Header
-- **Fix**: Korrekte `application/xml; charset=UTF-8` Header und XML-Struktur
+```python
+# VORHER (v2.0.x) - Fehlerhaft:
+async def make_api_request(method, endpoint, data=None):
+    headers = {}
+    if data:
+        headers['Content-Type'] = 'application/json'  # ❌ IMMER JSON!
+    
+    async with session.request(
+        method=method,
+        json=data,  # ❌ Sendet JSON trotz XML-Erwartung
+        headers=headers
+    )
 
-### ✅ Stock-Update Operationen
-- **Problem**: Fehlerhafte XML-Generierung für `stock_available` Updates
-- **Fix**: Vollständige und korrekte XML-Struktur für alle Stock-Operationen
+# NACHHER (v2.1.0) - Korrekt:
+async with PrestaShopClient(config) as client:
+    result = await client.create_product(...)  # ✅ Sendet korrektes XML
+```
 
-### ✅ Mehrsprachige Feldinitialisierung  
-- **Problem**: Undefined array key Warnungen bei mehrsprachigen Feldern
-- **Fix**: Systematische Initialisierung aller verfügbaren Sprachen
+### **Vollständige Produktinitialisierung:**
 
-## 🚀 Performance Verbesserungen
-
-- **Robuste Error-Behandlung**: Verbesserte Fehlerbehandlung bei API-Requests
-- **Debug-Logging**: Erweiterte XML-Request-Protokollierung für besseres Debugging
-- **Vollständige Feldabdeckung**: Alle erforderlichen PrestaShop-Felder werden korrekt initialisiert
-- **Optimierte Performance**: Effizientere mehrsprachige Feldbehandlung
+```python
+# NEU in v2.1.0 - Alle erforderlichen Felder:
+product_data = {
+    "product": {
+        "state": "1",              # ✅ Backend-Sichtbarkeit
+        "active": "1",             # ✅ Aktiv
+        "available_for_order": "1", # ✅ Bestellbar
+        "show_price": "1",         # ✅ Preis sichtbar
+        "indexed": "1",            # ✅ Suchindex
+        "visibility": "both",      # ✅ Frontend + Backend
+        # ... weitere 20+ korrekt initialisierte Felder
+    }
+}
+```
 
 ## 📞 Support
 
-Bei Problemen:
-1. Überprüfe die API-Konfiguration in den Umgebungsvariablen
-2. Teste die direkte API-Verbindung mit curl
-3. Kontrolliere die Logs für detaillierte Fehlermeldungen
-4. Stelle sicher, dass die PrestaShop API-Berechtigungen korrekt sind
+Bei Problemen nach dem Update:
+1. Überprüfe, dass Version 2.1.0 installiert ist
+2. Stelle sicher, dass Claude Desktop neugestartet wurde
+3. Teste die direkte API-Verbindung mit dem Python-Script
+4. Kontrolliere die Logs für XML-Request-Details
+
+## 🚀 Changelog
+
+**Version 2.1.0** (28.06.2025)
+- 🔧 **CRITICAL**: XML-Parsing Problem vollständig behoben
+- ✅ **NEW**: MCP Server verwendet PrestaShopClient für alle API-Calls
+- ✅ **FIX**: Produkterstellung mit sofortiger Backend-Sichtbarkeit
+- ✅ **FIX**: Stock-Updates ohne XML-Parsing-Fehler
+- ✅ **FIX**: Kategorie-Erstellung ohne PHP-Warnungen
+- ✅ **ENHANCED**: Vollständige mehrsprachige Feldinitialisierung
+- ✅ **IMPROVED**: Robuste Fehlerbehandlung für alle Operationen
 
 ---
 
-**Version**: Bugfixes vom 28.06.2025  
-**Status**: Production Ready ✅
+**Version**: 2.1.0 - XML-Parsing Problem gelöst ✅  
+**Status**: Production Ready - Alle kritischen Funktionen funktionieren ✅
