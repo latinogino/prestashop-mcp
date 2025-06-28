@@ -105,6 +105,21 @@ async def handle_list_tools():
             }
         ),
         Tool(
+            name="get_product_details",
+            description="Get detailed product information by ID including stock and category info",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "product_id": {"type": "string", "description": "Product ID to retrieve details for"},
+                    "display": {"type": "string", "description": "Comma-separated list of fields to include (optional)"},
+                    "include_stock": {"type": "boolean", "description": "Include stock information", "default": True},
+                    "include_category_info": {"type": "boolean", "description": "Include category details", "default": True}
+                },
+                "required": ["product_id"],
+                "additionalProperties": False
+            }
+        ),
+        Tool(
             name="create_product",
             description="Create a new product",
             inputSchema={
@@ -395,6 +410,50 @@ async def handle_call_tool(name: str, arguments: dict):
                 params['filter[name]'] = f"[{arguments['name_filter']}]%"
             result = await make_api_request('GET', 'products', params)
         
+        elif name == "get_product_details":
+            product_id = arguments['product_id']
+            params = {}
+            
+            # Add display parameter if specified
+            if arguments.get('display'):
+                params['display'] = arguments['display']
+            
+            # Get main product data
+            product_data = await make_api_request('GET', f'products/{product_id}', params)
+            
+            if 'product' not in product_data:
+                result = {"error": f"Product {product_id} not found"}
+            else:
+                result = product_data.copy()
+                
+                # Add stock information if requested
+                if arguments.get('include_stock', True):
+                    try:
+                        stock_params = {'filter[id_product]': product_id}
+                        stock_response = await make_api_request('GET', 'stock_availables', stock_params)
+                        
+                        if 'stock_availables' in stock_response and stock_response['stock_availables']:
+                            result['stock_info'] = stock_response['stock_availables'][0]
+                        else:
+                            result['stock_info'] = {"error": "Stock information not available"}
+                    except Exception as e:
+                        result['stock_info'] = {"error": f"Stock retrieval failed: {str(e)}"}
+                
+                # Add category information if requested
+                if arguments.get('include_category_info', True):
+                    try:
+                        category_id = product_data['product'].get('id_category_default')
+                        if category_id:
+                            category_response = await make_api_request('GET', f'categories/{category_id}')
+                            if 'category' in category_response:
+                                result['category_info'] = category_response['category']
+                            else:
+                                result['category_info'] = {"error": "Category not found"}
+                        else:
+                            result['category_info'] = {"error": "No default category assigned"}
+                    except Exception as e:
+                        result['category_info'] = {"error": f"Category retrieval failed: {str(e)}"}
+        
         elif name == "create_product":
             product_data = {
                 "product": {
@@ -602,7 +661,7 @@ async def main():
     
     # Run server
     print("🚀 Starting PrestaShop MCP server...", file=sys.stderr)
-    print("✅ Server ready with full CRUD operations", file=sys.stderr)
+    print("✅ Server ready with full CRUD operations including detailed product retrieval", file=sys.stderr)
     
     async with stdio_server() as (read_stream, write_stream):
         await server.run(
