@@ -141,46 +141,64 @@ class PrestaShopClient:
         return link_rewrite
 
     # ============================================================================
-    # PRODUCT MANAGEMENT
+    # UNIFIED PRODUCT MANAGEMENT
     # ============================================================================
     
     async def get_products(
-        self, 
-        limit: int = 10, 
-        filters: Optional[Dict[str, str]] = None
-    ) -> Dict[str, Any]:
-        """Get products from PrestaShop."""
-        params = {'limit': limit}
-        
-        if filters:
-            if 'id' in filters:
-                params['filter[id]'] = filters['id']
-            if 'name' in filters:
-                params['filter[name]'] = f"[{filters['name']}]%"
-            if 'category' in filters:
-                params['filter[id_category_default]'] = filters['category']
-        
-        return await self._make_request('GET', 'products', params=params)
-    
-    async def get_product_details(
-        self, 
-        product_id: str,
-        display: Optional[str] = None,
-        include_stock: bool = True,
-        include_category_info: bool = True
+        self,
+        product_id: Optional[str] = None,
+        limit: int = 10,
+        filters: Optional[Dict[str, str]] = None,
+        include_details: bool = False,
+        include_stock: bool = False,
+        include_category_info: bool = False,
+        display: Optional[str] = None
     ) -> Dict[str, Any]:
         """
-        Get detailed product information by ID.
+        Unified product retrieval method supporting all use cases.
         
         Args:
-            product_id: The product ID to retrieve
-            display: Comma-separated list of fields to include (e.g., 'id,name,price')
-            include_stock: Whether to include stock information
-            include_category_info: Whether to include category details
+            product_id: Retrieve single product by ID (takes precedence over other params)
+            limit: Number of products to retrieve for list queries
+            filters: Dictionary of filters (id, name, category)
+            include_details: Include complete product information
+            include_stock: Include stock/inventory information
+            include_category_info: Include category details
+            display: Comma-separated list of specific fields to include
             
         Returns:
-            Complete product information including stock and category details
+            Single product data (if product_id provided) or list of products
         """
+        
+        # Single product by ID
+        if product_id:
+            return await self._get_single_product(
+                product_id=product_id,
+                include_details=include_details,
+                include_stock=include_stock,
+                include_category_info=include_category_info,
+                display=display
+            )
+        
+        # Multiple products with optional details
+        return await self._get_multiple_products(
+            limit=limit,
+            filters=filters,
+            include_details=include_details,
+            include_stock=include_stock,
+            include_category_info=include_category_info,
+            display=display
+        )
+    
+    async def _get_single_product(
+        self,
+        product_id: str,
+        include_details: bool = False,
+        include_stock: bool = False,
+        include_category_info: bool = False,
+        display: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Get single product with optional enhanced information."""
         params = {}
         if display:
             params['display'] = display
@@ -194,7 +212,11 @@ class PrestaShopClient:
             
             result = product_data.copy()
             
-            # Add stock information if requested
+            # Add enhanced information if requested
+            if include_details:
+                # Details are already included in the main product data
+                pass
+            
             if include_stock:
                 try:
                     stock_params = {'filter[id_product]': product_id}
@@ -209,7 +231,6 @@ class PrestaShopClient:
                     logging.warning(f"Could not retrieve stock info for product {product_id}: {e}")
                     result['stock_info'] = {"error": f"Stock retrieval failed: {str(e)}"}
             
-            # Add category information if requested
             if include_category_info:
                 try:
                     category_id = product_data['product'].get('id_category_default')
@@ -231,7 +252,58 @@ class PrestaShopClient:
         except PrestaShopAPIError:
             raise
         except Exception as e:
-            raise PrestaShopAPIError(f"Failed to retrieve product details: {str(e)}")
+            raise PrestaShopAPIError(f"Failed to retrieve product: {str(e)}")
+    
+    async def _get_multiple_products(
+        self,
+        limit: int = 10,
+        filters: Optional[Dict[str, str]] = None,
+        include_details: bool = False,
+        include_stock: bool = False,
+        include_category_info: bool = False,
+        display: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Get multiple products with optional enhanced information."""
+        params = {'limit': limit}
+        
+        if display:
+            params['display'] = display
+        
+        if filters:
+            if 'id' in filters:
+                params['filter[id]'] = filters['id']
+            if 'name' in filters:
+                params['filter[name]'] = f"[{filters['name']}]%"
+            if 'category' in filters:
+                params['filter[id_category_default]'] = filters['category']
+        
+        products_data = await self._make_request('GET', 'products', params=params)
+        
+        # If enhanced information is requested, fetch it for each product
+        if (include_details or include_stock or include_category_info) and 'products' in products_data:
+            enhanced_products = []
+            
+            for product in products_data['products']:
+                product_id = product.get('id')
+                if product_id:
+                    try:
+                        enhanced_product = await self._get_single_product(
+                            product_id=product_id,
+                            include_details=include_details,
+                            include_stock=include_stock,
+                            include_category_info=include_category_info,
+                            display=display
+                        )
+                        enhanced_products.append(enhanced_product)
+                    except Exception as e:
+                        logging.warning(f"Could not enhance product {product_id}: {e}")
+                        enhanced_products.append(product)
+                else:
+                    enhanced_products.append(product)
+            
+            products_data['products'] = enhanced_products
+        
+        return products_data
     
     async def create_product(
         self,
