@@ -17,14 +17,12 @@ This MCP Server enables complete management of your PrestaShop store through AI 
 
 ## 🛠️ Available Tools
 
-### 📦 Product Management
-- `get_products` - Retrieve and filter products
-- `get_product_details` - **NEW** Get comprehensive product information by ID including stock and category details
-- `create_product` - Create new products (with inventory, reference, weight)
-- `update_product` - Fully edit products
-- `delete_product` - Remove products
-- `update_product_stock` - Manage inventory levels
-- `update_product_price` - Update prices and wholesale prices
+### 📦 Unified Product Management
+- `get_products` - **UNIFIED** Product retrieval supporting all use cases:
+  - **Single Product by ID**: Complete product details including stock and category info
+  - **Multiple Products**: List with optional filtering and enhancement
+  - **Flexible Enhancement**: Optional stock info, category details, custom field selection
+  - **Smart Filtering**: By category, name, or custom criteria
 
 ### 🏷️ Category Management
 - `get_categories` - Retrieve categories (with hierarchy filter)
@@ -223,22 +221,39 @@ pytest
 pytest --cov=src/prestashop_mcp --cov-report=html
 ```
 
-## 🆕 New Product Details Feature
+## 🆕 Unified Product API
 
-The `get_product_details` tool provides comprehensive product information including:
+The `get_products` tool now handles **all product retrieval scenarios** with a single, powerful interface:
 
-- **Complete Product Data**: All product fields including multilingual content
-- **Stock Information**: Current inventory levels and availability
-- **Category Details**: Associated category information
-- **Flexible Display**: Optional field selection for optimized queries
-
-### Example Usage with Claude:
-
+### **Single Product Retrieval**
 ```
-"Get detailed information for product ID 15 including stock and category data"
+"Get complete details for product ID 15 including stock and category information"
 ```
 
-This will return complete product information, stock levels, and category details in a single comprehensive response.
+### **Product Lists with Enhancement**
+```
+"Get all products in category 5 with stock information"
+```
+
+### **Flexible Field Selection**
+```
+"Get products showing only ID, name, and price fields"
+```
+
+### **Smart Filtering**
+```
+"Find products containing 'laptop' in the name with full details"
+```
+
+### **Use Cases:**
+
+| Scenario | Parameters | Result |
+|----------|------------|--------|
+| **Single Product Details** | `product_id="15", include_stock=true, include_category_info=true` | Complete product info with stock & category |
+| **Product List** | `limit=20, category_id="5"` | List of products in category 5 |
+| **Enhanced List** | `limit=10, include_details=true, include_stock=true` | Full product details with stock for 10 products |
+| **Filtered Search** | `name_filter="laptop", include_details=true` | All laptop products with complete information |
+| **Custom Fields** | `display="id,name,price", limit=50` | Specific fields only for 50 products |
 
 ## 🔧 Troubleshooting
 
@@ -365,6 +380,14 @@ python tests/test_crud_operations.py
 MIT License - see [LICENSE](LICENSE) for details.
 
 ## 📝 Changelog
+
+### v2.0.0 - Unified Product API (BREAKING CHANGES)
+- ✨ **MAJOR**: Unified `get_products` API handles all product retrieval scenarios
+- 🗑️ **REMOVED**: `get_product_details` method (functionality merged into `get_products`)
+- 🔧 **Enhanced**: Single API call for both individual products and lists
+- 📊 **Flexible**: Optional enhancement with stock, category, and custom field selection
+- 🏗️ **Cleaner**: Eliminates API duplication and provides intuitive interface
+- 🎯 **Breaking**: Update your integrations to use the new unified `get_products` method
 
 ### v1.1.0 - Enhanced Product Details
 - ✨ **NEW**: `get_product_details` method for comprehensive product information
