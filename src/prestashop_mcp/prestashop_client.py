@@ -162,6 +162,77 @@ class PrestaShopClient:
         
         return await self._make_request('GET', 'products', params=params)
     
+    async def get_product_details(
+        self, 
+        product_id: str,
+        display: Optional[str] = None,
+        include_stock: bool = True,
+        include_category_info: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Get detailed product information by ID.
+        
+        Args:
+            product_id: The product ID to retrieve
+            display: Comma-separated list of fields to include (e.g., 'id,name,price')
+            include_stock: Whether to include stock information
+            include_category_info: Whether to include category details
+            
+        Returns:
+            Complete product information including stock and category details
+        """
+        params = {}
+        if display:
+            params['display'] = display
+        
+        try:
+            # Get main product data
+            product_data = await self._make_request('GET', f'products/{product_id}', params=params)
+            
+            if 'product' not in product_data:
+                raise PrestaShopAPIError(f"Product {product_id} not found")
+            
+            result = product_data.copy()
+            
+            # Add stock information if requested
+            if include_stock:
+                try:
+                    stock_params = {'filter[id_product]': product_id}
+                    stock_response = await self._make_request('GET', 'stock_availables', params=stock_params)
+                    
+                    if 'stock_availables' in stock_response and stock_response['stock_availables']:
+                        result['stock_info'] = stock_response['stock_availables'][0]
+                    else:
+                        result['stock_info'] = {"error": "Stock information not available"}
+                        
+                except Exception as e:
+                    logging.warning(f"Could not retrieve stock info for product {product_id}: {e}")
+                    result['stock_info'] = {"error": f"Stock retrieval failed: {str(e)}"}
+            
+            # Add category information if requested
+            if include_category_info:
+                try:
+                    category_id = product_data['product'].get('id_category_default')
+                    if category_id:
+                        category_response = await self._make_request('GET', f'categories/{category_id}')
+                        if 'category' in category_response:
+                            result['category_info'] = category_response['category']
+                        else:
+                            result['category_info'] = {"error": "Category not found"}
+                    else:
+                        result['category_info'] = {"error": "No default category assigned"}
+                        
+                except Exception as e:
+                    logging.warning(f"Could not retrieve category info for product {product_id}: {e}")
+                    result['category_info'] = {"error": f"Category retrieval failed: {str(e)}"}
+            
+            return result
+            
+        except PrestaShopAPIError:
+            raise
+        except Exception as e:
+            raise PrestaShopAPIError(f"Failed to retrieve product details: {str(e)}")
+    
     async def create_product(
         self,
         name: str,
