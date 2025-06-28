@@ -27,6 +27,10 @@ class PrestaShopClient:
         self.base_url = config.shop_url.rstrip('/') + '/api/'
         self.auth = BasicAuth(config.api_key, '')
         self.session: Optional[aiohttp.ClientSession] = None
+        self.available_languages = [
+            {"id": 1, "name": "Default"},
+            {"id": 2, "name": "Secondary"}
+        ]  # Default language setup - can be enhanced with dynamic detection
     
     async def _get_session(self) -> aiohttp.ClientSession:
         """Get or create aiohttp session."""
@@ -42,7 +46,7 @@ class PrestaShopClient:
         def build_element(parent: ET.Element, key: str, value: Any):
             if isinstance(value, list) and value and isinstance(value[0], dict) and "id" in value[0] and "value" in value[0]:
                 # This is a multilingual field - create nested structure
-                # <n><language id="1">value</language><language id="2">value</language></n>
+                # <name><language id="1">value</language><language id="2">value</language></name>
                 container = ET.SubElement(parent, key)
                 for lang_item in value:
                     language_elem = ET.SubElement(container, "language")
@@ -65,11 +69,24 @@ class PrestaShopClient:
                 element = ET.SubElement(parent, key)
                 element.text = str(value) if value is not None else ""
         
+        # Always wrap in prestashop root element with proper namespace
         root = ET.Element(root_name)
+        root.set("xmlns:xlink", "http://www.w3.org/1999/xlink")
+        
         for key, value in data.items():
             build_element(root, key, value)
         
-        return ET.tostring(root, encoding='unicode')
+        xml_str = ET.tostring(root, encoding='unicode')
+        
+        # Add XML declaration for complete XML document
+        return f'<?xml version="1.0" encoding="UTF-8"?>\n{xml_str}'
+    
+    def _init_multilingual_field(self, value: str = "") -> List[Dict[str, Any]]:
+        """Initialize multilingual field for all available languages."""
+        return [
+            {"id": lang["id"], "value": value}
+            for lang in self.available_languages
+        ]
     
     async def _make_request(
         self, 
@@ -94,7 +111,7 @@ class PrestaShopClient:
         if data and method.upper() in ['POST', 'PUT']:
             # Convert data to XML for write operations
             request_body = self._dict_to_xml(data)
-            headers['Content-Type'] = 'application/xml'
+            headers['Content-Type'] = 'application/xml; charset=UTF-8'
             
             # Debug logging for XML structure
             logging.info(f"=== XML Request for {method} {endpoint} ===")
@@ -104,7 +121,7 @@ class PrestaShopClient:
         elif data:
             # For other methods, use JSON (though this should be rare)
             request_body = json.dumps(data)
-            headers['Content-Type'] = 'application/json'
+            headers['Content-Type'] = 'application/json; charset=UTF-8'
         
         try:
             async with session.request(
@@ -315,42 +332,72 @@ class PrestaShopClient:
         reference: Optional[str] = None,
         weight: Optional[float] = None
     ) -> Dict[str, Any]:
-        """Create a new product in PrestaShop."""
+        """Create a new product in PrestaShop with ALL required fields for backend visibility."""
         link_rewrite = self._generate_link_rewrite(name)
         
+        # CRITICAL FIX: Complete product initialization with all required fields
         product_data = {
             "product": {
-                "name": [
-                    {"id": 1, "value": name},
-                    {"id": 2, "value": name}
-                ],
-                "link_rewrite": [
-                    {"id": 1, "value": link_rewrite},
-                    {"id": 2, "value": link_rewrite}
-                ],
+                # Multilingual fields - properly initialized for all languages
+                "name": self._init_multilingual_field(name),
+                "link_rewrite": self._init_multilingual_field(link_rewrite),
+                "description": self._init_multilingual_field(description if description else ""),
+                "description_short": self._init_multilingual_field(
+                    description[:160] if description else ""
+                ),
+                "meta_title": self._init_multilingual_field(name[:70]),
+                "meta_description": self._init_multilingual_field(
+                    description[:160] if description else name
+                ),
+                "meta_keywords": self._init_multilingual_field(""),
+                
+                # CRITICAL: State field for backend visibility (was missing!)
+                "state": "1",  # 1 = Published, 0 = Draft (invisible in backend)
+                
+                # Core product fields
                 "price": str(price),
-                "active": "1",
-                "available_for_order": "1",
-                "show_price": "1",
+                "active": "1",  # Product is active
+                "available_for_order": "1",  # Can be ordered
+                "show_price": "1",  # Price is visible
+                "indexed": "1",  # Include in search index
+                "visibility": "both",  # Visible in catalog and search
                 "id_category_default": category_id if category_id else "2",
+                
+                # Stock and ordering
                 "minimal_quantity": "1",
                 "low_stock_alert": "0",
+                "out_of_stock": "2",  # Deny orders when out of stock
+                
+                # Physical properties
                 "weight": str(weight) if weight is not None else "0",
                 "is_virtual": "0",
+                
+                # System fields
                 "cache_default_attribute": "0",
                 "id_default_image": "0",
-                "description": [
-                    {"id": 1, "value": description if description else ""},
-                    {"id": 2, "value": description if description else ""}
-                ],
-                "description_short": [
-                    {"id": 1, "value": description[:160] if description else ""},
-                    {"id": 2, "value": description[:160] if description else ""}
-                ],
-                "meta_title": [
-                    {"id": 1, "value": name[:70]},
-                    {"id": 2, "value": name[:70]}
-                ]
+                "id_default_combination": "0",
+                "id_tax_rules_group": "1",  # Default tax group
+                "id_shop_default": "1",
+                "advanced_stock_management": "0",
+                "depends_on_stock": "0",
+                "pack_stock_type": "3",
+                
+                # SEO and additional fields
+                "redirect_type": "404",
+                "id_type_redirected": "0",
+                "available_for_order": "1",
+                "available_date": "0000-00-00",
+                "show_condition": "0",
+                "condition": "new",
+                "show_price": "1",
+                "indexed": "1",
+                "visibility": "both",
+                "cache_is_pack": "0",
+                "public_name": "",
+                "cache_has_attachments": "0",
+                "is_customizable": "0",
+                "uploadable_files": "0",
+                "text_fields": "0"
             }
         }
         
@@ -385,22 +432,13 @@ class PrestaShopClient:
         
         # Update fields with correct multilingual structure
         if 'name' in kwargs:
-            product_data['name'] = [
-                {"id": 1, "value": kwargs['name']},
-                {"id": 2, "value": kwargs['name']}
-            ]
+            product_data['name'] = self._init_multilingual_field(kwargs['name'])
             link_rewrite = self._generate_link_rewrite(kwargs['name'])
-            product_data['link_rewrite'] = [
-                {"id": 1, "value": link_rewrite},
-                {"id": 2, "value": link_rewrite}
-            ]
+            product_data['link_rewrite'] = self._init_multilingual_field(link_rewrite)
         if 'price' in kwargs:
             product_data['price'] = str(kwargs['price'])
         if 'description' in kwargs:
-            product_data['description'] = [
-                {"id": 1, "value": kwargs['description']},
-                {"id": 2, "value": kwargs['description']}
-            ]
+            product_data['description'] = self._init_multilingual_field(kwargs['description'])
         if 'category_id' in kwargs:
             product_data['id_category_default'] = kwargs['category_id']
         if 'active' in kwargs:
@@ -421,23 +459,26 @@ class PrestaShopClient:
         product_id: str, 
         quantity: int
     ) -> Dict[str, Any]:
-        """Update product stock quantity."""
+        """Update product stock quantity with CORRECT XML structure."""
         # Get stock availables for this product
         stock_params = {'filter[id_product]': product_id}
         stock_response = await self._make_request('GET', 'stock_availables', params=stock_params)
         
         if 'stock_availables' in stock_response and stock_response['stock_availables']:
-            stock_id = stock_response['stock_availables'][0]['id']
+            stock_entry = stock_response['stock_availables'][0]
+            stock_id = stock_entry['id']
             
+            # CRITICAL FIX: Proper XML structure for stock_available
             stock_data = {
                 "stock_available": {
-                    "id": stock_id,
-                    "id_product": product_id,
-                    "id_product_attribute": "0",
+                    "id": str(stock_id),
+                    "id_product": str(product_id),
+                    "id_product_attribute": "0",  # 0 for simple products
+                    "id_shop": "1",  # Default shop
+                    "id_shop_group": "0",
                     "quantity": str(quantity),
-                    "id_shop": "1",
                     "depends_on_stock": "0",
-                    "out_of_stock": "2"
+                    "out_of_stock": "2"  # Deny orders when out of stock
                 }
             }
             
@@ -483,30 +524,29 @@ class PrestaShopClient:
         active: bool = True,
         link_rewrite: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Create a new category in PrestaShop."""
+        """Create a new category in PrestaShop with proper multilingual initialization."""
         if not link_rewrite:
             link_rewrite = self._generate_link_rewrite(name)
         
+        # ENHANCED: Complete multilingual field initialization
         category_data = {
             "category": {
-                "name": [
-                    {"id": 1, "value": name},
-                    {"id": 2, "value": name}
-                ],
-                "link_rewrite": [
-                    {"id": 1, "value": link_rewrite},
-                    {"id": 2, "value": link_rewrite}
-                ],
+                "name": self._init_multilingual_field(name),
+                "link_rewrite": self._init_multilingual_field(link_rewrite),
+                "description": self._init_multilingual_field(description if description else ""),
+                "meta_title": self._init_multilingual_field(name[:70]),
+                "meta_description": self._init_multilingual_field(
+                    description[:160] if description else name
+                ),
+                "meta_keywords": self._init_multilingual_field(""),
                 "id_parent": parent_id,
-                "active": "1" if active else "0"
+                "active": "1" if active else "0",
+                "is_root_category": "0",
+                "position": "0",
+                "date_add": "",
+                "date_upd": ""
             }
         }
-        
-        if description:
-            category_data["category"]["description"] = [
-                {"id": 1, "value": description},
-                {"id": 2, "value": description}
-            ]
         
         return await self._make_request('POST', 'categories', data=category_data)
     
@@ -534,21 +574,12 @@ class PrestaShopClient:
         
         # Update only the requested fields with correct multilingual structure
         if 'name' in kwargs:
-            category_data['name'] = [
-                {"id": 1, "value": kwargs['name']},
-                {"id": 2, "value": kwargs['name']}
-            ]
+            category_data['name'] = self._init_multilingual_field(kwargs['name'])
             link_rewrite = self._generate_link_rewrite(kwargs['name'])
-            category_data['link_rewrite'] = [
-                {"id": 1, "value": link_rewrite},
-                {"id": 2, "value": link_rewrite}
-            ]
+            category_data['link_rewrite'] = self._init_multilingual_field(link_rewrite)
         
         if 'description' in kwargs:
-            category_data['description'] = [
-                {"id": 1, "value": kwargs['description']},
-                {"id": 2, "value": kwargs['description']}
-            ]
+            category_data['description'] = self._init_multilingual_field(kwargs['description'])
         
         if 'active' in kwargs:
             category_data['active'] = "1" if kwargs['active'] else "0"
