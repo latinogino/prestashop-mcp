@@ -90,32 +90,22 @@ async def handle_list_tools():
             }
         ),
         
-        # Products CRUD
+        # Unified Products Management
         Tool(
             name="get_products",
-            description="Get PrestaShop products",
+            description="Unified product retrieval - supports both single product by ID and multiple products with comprehensive filtering and enhancement options",
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "limit": {"type": "integer", "description": "Number of products to retrieve", "default": 10},
+                    "product_id": {"type": "string", "description": "Retrieve single product by ID (takes precedence over other params)"},
+                    "limit": {"type": "integer", "description": "Number of products to retrieve for list queries", "default": 10},
                     "category_id": {"type": "string", "description": "Filter by category ID"},
-                    "name_filter": {"type": "string", "description": "Filter by product name"}
+                    "name_filter": {"type": "string", "description": "Filter by product name"},
+                    "include_details": {"type": "boolean", "description": "Include complete product information", "default": False},
+                    "include_stock": {"type": "boolean", "description": "Include stock/inventory information", "default": False},
+                    "include_category_info": {"type": "boolean", "description": "Include category details", "default": False},
+                    "display": {"type": "string", "description": "Comma-separated list of specific fields to include (e.g., 'id,name,price')"}
                 },
-                "additionalProperties": False
-            }
-        ),
-        Tool(
-            name="get_product_details",
-            description="Get detailed product information by ID including stock and category info",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "product_id": {"type": "string", "description": "Product ID to retrieve details for"},
-                    "display": {"type": "string", "description": "Comma-separated list of fields to include (optional)"},
-                    "include_stock": {"type": "boolean", "description": "Include stock information", "default": True},
-                    "include_category_info": {"type": "boolean", "description": "Include category details", "default": True}
-                },
-                "required": ["product_id"],
                 "additionalProperties": False
             }
         ),
@@ -401,58 +391,131 @@ async def handle_call_tool(name: str, arguments: dict):
         elif name == "delete_category":
             result = await make_api_request('DELETE', f"categories/{arguments['category_id']}")
         
-        # Products CRUD
+        # Unified Products Management
         elif name == "get_products":
-            params = {'limit': arguments.get('limit', 10)}
+            # Build filters dictionary
+            filters = {}
             if arguments.get('category_id'):
-                params['filter[id_category_default]'] = arguments['category_id']
+                filters['category'] = arguments['category_id']
             if arguments.get('name_filter'):
-                params['filter[name]'] = f"[{arguments['name_filter']}]%"
-            result = await make_api_request('GET', 'products', params)
-        
-        elif name == "get_product_details":
-            product_id = arguments['product_id']
-            params = {}
+                filters['name'] = arguments['name_filter']
             
-            # Add display parameter if specified
-            if arguments.get('display'):
-                params['display'] = arguments['display']
+            # Build parameters for the unified API call
+            api_params = {
+                'product_id': arguments.get('product_id'),
+                'limit': arguments.get('limit', 10),
+                'filters': filters if filters else None,
+                'include_details': arguments.get('include_details', False),
+                'include_stock': arguments.get('include_stock', False),
+                'include_category_info': arguments.get('include_category_info', False),
+                'display': arguments.get('display')
+            }
             
-            # Get main product data
-            product_data = await make_api_request('GET', f'products/{product_id}', params)
+            # Remove None values
+            api_params = {k: v for k, v in api_params.items() if v is not None}
             
-            if 'product' not in product_data:
-                result = {"error": f"Product {product_id} not found"}
-            else:
-                result = product_data.copy()
+            # Use the unified client method (we'll simulate this for now since we don't have direct access)
+            if arguments.get('product_id'):
+                # Single product by ID
+                product_id = arguments['product_id']
+                params = {}
+                if arguments.get('display'):
+                    params['display'] = arguments['display']
                 
-                # Add stock information if requested
-                if arguments.get('include_stock', True):
-                    try:
-                        stock_params = {'filter[id_product]': product_id}
-                        stock_response = await make_api_request('GET', 'stock_availables', stock_params)
-                        
-                        if 'stock_availables' in stock_response and stock_response['stock_availables']:
-                            result['stock_info'] = stock_response['stock_availables'][0]
-                        else:
-                            result['stock_info'] = {"error": "Stock information not available"}
-                    except Exception as e:
-                        result['stock_info'] = {"error": f"Stock retrieval failed: {str(e)}"}
+                # Get main product data
+                product_data = await make_api_request('GET', f'products/{product_id}', params)
                 
-                # Add category information if requested
-                if arguments.get('include_category_info', True):
-                    try:
-                        category_id = product_data['product'].get('id_category_default')
-                        if category_id:
-                            category_response = await make_api_request('GET', f'categories/{category_id}')
-                            if 'category' in category_response:
-                                result['category_info'] = category_response['category']
+                if 'product' not in product_data:
+                    result = {"error": f"Product {product_id} not found"}
+                else:
+                    result = product_data.copy()
+                    
+                    # Add enhanced information if requested
+                    if arguments.get('include_stock', False):
+                        try:
+                            stock_params = {'filter[id_product]': product_id}
+                            stock_response = await make_api_request('GET', 'stock_availables', stock_params)
+                            
+                            if 'stock_availables' in stock_response and stock_response['stock_availables']:
+                                result['stock_info'] = stock_response['stock_availables'][0]
                             else:
-                                result['category_info'] = {"error": "Category not found"}
+                                result['stock_info'] = {"error": "Stock information not available"}
+                        except Exception as e:
+                            result['stock_info'] = {"error": f"Stock retrieval failed: {str(e)}"}
+                    
+                    if arguments.get('include_category_info', False):
+                        try:
+                            category_id = product_data['product'].get('id_category_default')
+                            if category_id:
+                                category_response = await make_api_request('GET', f'categories/{category_id}')
+                                if 'category' in category_response:
+                                    result['category_info'] = category_response['category']
+                                else:
+                                    result['category_info'] = {"error": "Category not found"}
+                            else:
+                                result['category_info'] = {"error": "No default category assigned"}
+                        except Exception as e:
+                            result['category_info'] = {"error": f"Category retrieval failed: {str(e)}"}
+            else:
+                # Multiple products
+                params = {'limit': arguments.get('limit', 10)}
+                if arguments.get('display'):
+                    params['display'] = arguments['display']
+                if arguments.get('category_id'):
+                    params['filter[id_category_default]'] = arguments['category_id']
+                if arguments.get('name_filter'):
+                    params['filter[name]'] = f"[{arguments['name_filter']}]%"
+                
+                result = await make_api_request('GET', 'products', params)
+                
+                # Add enhanced information if requested and we have products
+                if (arguments.get('include_details') or arguments.get('include_stock') or arguments.get('include_category_info')) and 'products' in result:
+                    enhanced_products = []
+                    
+                    for product in result['products']:
+                        product_id = product.get('id')
+                        if product_id:
+                            try:
+                                # Get detailed product info
+                                detail_params = {}
+                                if arguments.get('display'):
+                                    detail_params['display'] = arguments['display']
+                                
+                                detailed_product = await make_api_request('GET', f'products/{product_id}', detail_params)
+                                
+                                if 'product' in detailed_product:
+                                    enhanced_product = detailed_product.copy()
+                                    
+                                    # Add stock info if requested
+                                    if arguments.get('include_stock', False):
+                                        try:
+                                            stock_params = {'filter[id_product]': product_id}
+                                            stock_response = await make_api_request('GET', 'stock_availables', stock_params)
+                                            if 'stock_availables' in stock_response and stock_response['stock_availables']:
+                                                enhanced_product['stock_info'] = stock_response['stock_availables'][0]
+                                        except Exception:
+                                            enhanced_product['stock_info'] = {"error": "Stock retrieval failed"}
+                                    
+                                    # Add category info if requested
+                                    if arguments.get('include_category_info', False):
+                                        try:
+                                            category_id = detailed_product['product'].get('id_category_default')
+                                            if category_id:
+                                                category_response = await make_api_request('GET', f'categories/{category_id}')
+                                                if 'category' in category_response:
+                                                    enhanced_product['category_info'] = category_response['category']
+                                        except Exception:
+                                            enhanced_product['category_info'] = {"error": "Category retrieval failed"}
+                                    
+                                    enhanced_products.append(enhanced_product)
+                                else:
+                                    enhanced_products.append(product)
+                            except Exception as e:
+                                enhanced_products.append(product)
                         else:
-                            result['category_info'] = {"error": "No default category assigned"}
-                    except Exception as e:
-                        result['category_info'] = {"error": f"Category retrieval failed: {str(e)}"}
+                            enhanced_products.append(product)
+                    
+                    result['products'] = enhanced_products
         
         elif name == "create_product":
             product_data = {
@@ -661,7 +724,7 @@ async def main():
     
     # Run server
     print("🚀 Starting PrestaShop MCP server...", file=sys.stderr)
-    print("✅ Server ready with full CRUD operations including detailed product retrieval", file=sys.stderr)
+    print("✅ Server ready with unified product API and full CRUD operations", file=sys.stderr)
     
     async with stdio_server() as (read_stream, write_stream):
         await server.run(
@@ -669,7 +732,7 @@ async def main():
             write_stream,
             InitializationOptions(
                 server_name="prestashop-mcp",
-                server_version="1.0.0",
+                server_version="2.0.0",
                 capabilities=server.get_capabilities(
                     notification_options=NotificationOptions(),
                     experimental_capabilities={},
