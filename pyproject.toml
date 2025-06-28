@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "prestashop-mcp"
-version = "1.0.0"
-description = "Professional Model Context Protocol server for complete PrestaShop e-commerce management"
+version = "2.0.0"
+description = "Professional Model Context Protocol server for complete PrestaShop e-commerce management with unified product API"
 readme = "README.md"
 requires-python = ">=3.8"
 authors = [
@@ -13,7 +13,7 @@ authors = [
 ]
 keywords = [
     "prestashop", "mcp", "model-context-protocol", "ecommerce", "api", 
-    "shop-management", "business-intelligence", "automation"
+    "shop-management", "business-intelligence", "automation", "unified-api"
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -42,10 +42,10 @@ dependencies = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/your-username/prestashop-mcp"
-"Bug Reports" = "https://github.com/your-username/prestashop-mcp/issues"
-"Source" = "https://github.com/your-username/prestashop-mcp"
-"Documentation" = "https://github.com/your-username/prestashop-mcp#readme"
+"Homepage" = "https://github.com/latinogino/prestashop-mcp"
+"Bug Reports" = "https://github.com/latinogino/prestashop-mcp/issues"
+"Source" = "https://github.com/latinogino/prestashop-mcp"
+"Documentation" = "https://github.com/latinogino/prestashop-mcp#readme"
 
 [project.scripts]
 prestashop-mcp = "prestashop_mcp.cli:main"
