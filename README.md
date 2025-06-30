@@ -343,6 +343,7 @@ prestashop-mcp/
 │   └── test_crud_operations.py          # CRUD Integration Tests
 ├── venv_prestashop/                     # Virtual Environment (after setup)
 ├── README.md                            # Documentation
+├── CHANGELOG.md                         # Version History
 ├── pyproject.toml                       # Package Configuration
 └── requirements.txt                     # All Dependencies
 ```
@@ -406,88 +407,43 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## 📝 Changelog
 
-### v3.0.0 - Extended Functionality (LATEST)
-- ✨ **NEW**: Module Management - Install, activate, deactivate modules
-- ✨ **NEW**: ps_mainmenu Management - Complete navigation control
-- ✨ **NEW**: Cache Management - Clear cache and monitor status
-- ✨ **NEW**: Theme Management - Configure theme settings
-- 🔧 **Enhanced**: Comprehensive store administration tools
-- 📊 **Extended**: 12 new MCP tools for advanced functionality
-- 🏗️ **Professional**: Enterprise-level PrestaShop management
-
-### v2.0.0 - Unified Product API (BREAKING CHANGES)
-- ✨ **MAJOR**: Unified `get_products` API handles all product retrieval scenarios
-- 🗑️ **REMOVED**: `get_product_details` method (functionality merged into `get_products`)
-- 🔧 **Enhanced**: Single API call for both individual products and lists
-- 📊 **Flexible**: Optional enhancement with stock, category, and custom field selection
-- 🏗️ **Cleaner**: Eliminates API duplication and provides intuitive interface
-
-### v1.1.0 - Enhanced Product Details
-- ✨ **NEW**: `get_product_details` method for comprehensive product information
-- 📊 Enhanced product queries with stock and category information
-- 🔍 Flexible field selection with display parameter
-- 🏗️ Improved API client architecture for detailed data retrieval
-
-### v1.0.0 - Production Release
-- ✨ Complete store management with professional tools
-- 📦 Enhanced product features (inventory, prices, references)
-- 🏷️ Category management with hierarchy support
-- 👥 Customer management (create, edit)
-- 📋 Order management with status updates
-- ⚙️ Store statistics and configuration
-- 🛡️ Production-ready with comprehensive tests
+See [CHANGELOG.md](CHANGELOG.md) for a detailed history of changes.
 
 ## 🏗️ Project Status & Development Notes
 
 ### 📋 **Maintenance Status**
 
-**⚠️ Limited Maintenance**: Ich plane zurzeit nicht, dieses Repository aktiv zu maintainen. Der PrestaShop MCP Server war vielmehr ein Test gewesen, wie ein MCP Server erstellt werden kann ohne nennenswerte eigene Programmiererfahrung und weitestgehend fußend auf LLMs und MCPs.
+**⚠️ Limited Maintenance**: I currently do not plan to actively maintain this repository. The PrestaShop MCP Server was rather a test of how an MCP server can be created without significant own programming experience and largely based on LLMs and MCPs.
 
 ### 🧪 **Experimental Nature**
 
-Dieses Projekt diente als **Proof of Concept** für:
-- **LLM-Assisted Development**: Entwicklung komplexer Software-Integrations-Lösungen mit minimaler manueller Programmierung
-- **MCP Server Architecture**: Praktische Implementierung der Model Context Protocol Spezifikation
-- **AI-Driven E-Commerce Integration**: Automatisierte PrestaShop-Verwaltung durch natürliche Sprache
-- **No-Code/Low-Code Ansatz**: Maximale Nutzung von KI-Tools für professionelle Software-Entwicklung
+This project served as a **Proof of Concept** for:
+- **LLM-Assisted Development**: Development of complex software integration solutions with minimal manual programming
+- **MCP Server Architecture**: Practical implementation of the Model Context Protocol specification
+- **AI-Driven E-Commerce Integration**: Automated PrestaShop management through natural language
+- **No-Code/Low-Code Approach**: Maximum use of AI tools for professional software development
 
-### 🐳 **Geplante Docker-Distribution**
+### 🐳 **Planned Docker Distribution**
 
-**Kommende Features:**
-Es ist noch geplant, den ganzen MCP Server als **fertigen Docker Container** bereitzustellen, sobald alle Funktionen wie gewünscht implementiert sind.
+**Upcoming Features:**
+It is still planned to provide the entire MCP server as a **ready-made Docker container** as soon as all functions are implemented as desired.
 
-**Vorteile der Docker-Bereitstellung:**
-- ✅ **Zero-Configuration Setup**: Einfache Installation ohne komplexe Python-Umgebung
-- ✅ **Konsistente Umgebung**: Identisches Verhalten auf allen Plattformen
-- ✅ **Isolierte Dependencies**: Keine Konflikte mit lokalen Python-Installationen
-- ✅ **Production-Ready**: Optimiert für produktive Nutzung
-- ✅ **Auto-Updates**: Einfache Aktualisierung auf neue Versionen
+**Benefits of Docker deployment:**
+- ✅ **Zero-Configuration Setup**: Easy installation without complex Python environment
+- ✅ **Consistent Environment**: Identical behavior on all platforms
+- ✅ **Isolated Dependencies**: No conflicts with local Python installations
+- ✅ **Production-Ready**: Optimized for productive use
+- ✅ **Auto-Updates**: Easy update to new versions
 
-**Geplante Docker-Nutzung:**
+**Planned Docker usage:**
 ```bash
-# Zukünftige Docker-Installation (geplant)
+# Future Docker installation (planned)
 docker pull latinogino/prestashop-mcp:latest
 docker run -e PRESTASHOP_SHOP_URL=https://your-shop.com \
            -e PRESTASHOP_API_KEY=your-key \
            -p 8080:8080 \
            latinogino/prestashop-mcp:latest
 ```
-
-### 💡 **Community & Contributions**
-
-Während aktive Wartung begrenzt ist, sind **Community Contributions** willkommen:
-- 🐛 **Bug Reports**: Issues können gerne gemeldet werden
-- ✨ **Feature Requests**: Vorschläge für Verbesserungen
-- 🔧 **Pull Requests**: Community-getriebene Entwicklung
-- 📖 **Documentation**: Verbesserungen der Dokumentation
-
-### 🎯 **Verwendungszweck**
-
-Dieses Repository demonstriert erfolgreich:
-- Vollständige PrestaShop API-Integration via MCP
-- Professionelle Software-Architektur ohne traditionelle Programmiererfahrung  
-- Praktische Anwendung von LLMs in der Software-Entwicklung
-- Funktionsfähige E-Commerce-Automatisierung durch KI
 
 ---
 
