@@ -808,19 +808,30 @@ class PrestaShopClient:
     async def get_main_menu_links(self) -> Dict[str, Any]:
         """Get ps_mainmenu links from configurations."""
         try:
-            # ps_mainmenu stores its data in configurations
-            params = {'filter[name]': '[PS_MAINMENU_]%'}
+            # FIXED: Correct filter pattern for PS_MAINMENU_CONTENT_ configurations
+            params = {'filter[name]': '[PS_MAINMENU_CONTENT_]%'}
             configs = await self._make_request('GET', 'configurations', params=params)
             
             menu_configs = {}
             if 'configurations' in configs:
                 for config in configs['configurations']:
-                    if config.get('name', '').startswith('PS_MAINMENU_'):
-                        menu_configs[config['name']] = config
+                    config_name = config.get('name', '')
+                    # Enhanced filtering with regex pattern matching
+                    if config_name.startswith('PS_MAINMENU_CONTENT_'):
+                        try:
+                            # Parse JSON value to make it more readable
+                            if config.get('value'):
+                                parsed_value = json.loads(config['value'])
+                                config['parsed_value'] = parsed_value
+                        except json.JSONDecodeError:
+                            # Keep original value if not valid JSON
+                            pass
+                        menu_configs[config_name] = config
             
             return {
                 "main_menu": menu_configs,
-                "message": "Main menu configurations retrieved"
+                "count": len(menu_configs),
+                "message": f"Found {len(menu_configs)} main menu configurations"
             }
             
         except Exception as e:
