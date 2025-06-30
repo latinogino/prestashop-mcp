@@ -1,4 +1,4 @@
-"""Professional PrestaShop MCP Server with comprehensive CRUD operations."""
+"""Professional PrestaShop MCP Server with comprehensive CRUD operations and extended functionality."""
 
 import asyncio
 import json
@@ -263,6 +263,136 @@ async def handle_list_tools():
             name="get_order_states",
             description="Get available order states/statuses",
             inputSchema={"type": "object", "properties": {}, "additionalProperties": False}
+        ),
+        
+        # ============================================================================
+        # NEW EXTENDED FUNCTIONALITY
+        # ============================================================================
+        
+        # Module Management
+        Tool(
+            name="get_modules",
+            description="Get PrestaShop modules",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "limit": {"type": "integer", "description": "Number of modules to retrieve", "default": 20},
+                    "module_name": {"type": "string", "description": "Filter by module name"}
+                },
+                "additionalProperties": False
+            }
+        ),
+        Tool(
+            name="get_module_by_name",
+            description="Get specific module by technical name",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "module_name": {"type": "string", "description": "Module technical name"}
+                },
+                "required": ["module_name"],
+                "additionalProperties": False
+            }
+        ),
+        Tool(
+            name="install_module",
+            description="Install a PrestaShop module",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "module_name": {"type": "string", "description": "Module technical name to install"}
+                },
+                "required": ["module_name"],
+                "additionalProperties": False
+            }
+        ),
+        Tool(
+            name="update_module_status",
+            description="Activate or deactivate a module",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "module_name": {"type": "string", "description": "Module technical name"},
+                    "active": {"type": "boolean", "description": "Whether module should be active"}
+                },
+                "required": ["module_name", "active"],
+                "additionalProperties": False
+            }
+        ),
+        
+        # Main Menu (ps_mainmenu) Management
+        Tool(
+            name="get_main_menu_links",
+            description="Get ps_mainmenu navigation links",
+            inputSchema={"type": "object", "properties": {}, "additionalProperties": False}
+        ),
+        Tool(
+            name="update_main_menu_link",
+            description="Update a main menu navigation link",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "link_id": {"type": "string", "description": "Menu link ID to update"},
+                    "name": {"type": "string", "description": "Link display name"},
+                    "url": {"type": "string", "description": "Link URL"},
+                    "active": {"type": "boolean", "description": "Whether link is active"}
+                },
+                "required": ["link_id"],
+                "additionalProperties": False
+            }
+        ),
+        Tool(
+            name="add_main_menu_link",
+            description="Add a new main menu navigation link",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string", "description": "Link display name"},
+                    "url": {"type": "string", "description": "Link URL"},
+                    "position": {"type": "integer", "description": "Menu position", "default": 0},
+                    "active": {"type": "boolean", "description": "Whether link is active", "default": True}
+                },
+                "required": ["name", "url"],
+                "additionalProperties": False
+            }
+        ),
+        
+        # Cache Management
+        Tool(
+            name="clear_cache",
+            description="Clear PrestaShop cache",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "cache_type": {"type": "string", "description": "Type of cache to clear", "default": "all", "enum": ["all"]}
+                },
+                "additionalProperties": False
+            }
+        ),
+        Tool(
+            name="get_cache_status",
+            description="Get current cache configuration status",
+            inputSchema={"type": "object", "properties": {}, "additionalProperties": False}
+        ),
+        
+        # Theme Management
+        Tool(
+            name="get_themes",
+            description="Get available themes and current theme settings",
+            inputSchema={"type": "object", "properties": {}, "additionalProperties": False}
+        ),
+        Tool(
+            name="update_theme_setting",
+            description="Update a theme configuration setting",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "setting_name": {"type": "string", "description": "Theme setting name (e.g., PS_LOGO, PS_THEME_NAME)"},
+                    "value": {"type": "string", "description": "New setting value"}
+                },
+                "required": ["setting_name", "value"],
+                "additionalProperties": False
+            }
         )
     ]
 
@@ -415,6 +545,68 @@ async def handle_call_tool(name: str, arguments: dict):
             elif name == "get_order_states":
                 result = await client.get_order_states()
             
+            # ============================================================================
+            # NEW EXTENDED FUNCTIONALITY HANDLERS
+            # ============================================================================
+            
+            # Module Management
+            elif name == "get_modules":
+                result = await client.get_modules(
+                    limit=arguments.get('limit', 20),
+                    module_name=arguments.get('module_name')
+                )
+            
+            elif name == "get_module_by_name":
+                result = await client.get_module_by_name(arguments['module_name'])
+            
+            elif name == "install_module":
+                result = await client.install_module(arguments['module_name'])
+            
+            elif name == "update_module_status":
+                result = await client.update_module_status(
+                    module_name=arguments['module_name'],
+                    active=arguments['active']
+                )
+            
+            # Main Menu Management
+            elif name == "get_main_menu_links":
+                result = await client.get_main_menu_links()
+            
+            elif name == "update_main_menu_link":
+                result = await client.update_main_menu_link(
+                    link_id=arguments['link_id'],
+                    name=arguments.get('name'),
+                    url=arguments.get('url'),
+                    active=arguments.get('active')
+                )
+            
+            elif name == "add_main_menu_link":
+                result = await client.add_main_menu_link(
+                    name=arguments['name'],
+                    url=arguments['url'],
+                    position=arguments.get('position', 0),
+                    active=arguments.get('active', True)
+                )
+            
+            # Cache Management
+            elif name == "clear_cache":
+                result = await client.clear_cache(
+                    cache_type=arguments.get('cache_type', 'all')
+                )
+            
+            elif name == "get_cache_status":
+                result = await client.get_cache_status()
+            
+            # Theme Management
+            elif name == "get_themes":
+                result = await client.get_themes()
+            
+            elif name == "update_theme_setting":
+                result = await client.update_theme_setting(
+                    setting_name=arguments['setting_name'],
+                    value=arguments['value']
+                )
+            
             else:
                 result = {"error": f"Unknown tool: {name}"}
         
@@ -435,10 +627,11 @@ async def main():
     try:
         config = Config()
         async with PrestaShopClient(config) as client:
-            print("🧪 Testing API connection with XML support...", file=sys.stderr)
+            print("🧪 Testing API connection with extended functionality...", file=sys.stderr)
             result = await client.get_configurations()
             if 'error' not in result:
-                print("✅ API connection successful with XML support", file=sys.stderr)
+                print("✅ API connection successful with extended functionality", file=sys.stderr)
+                print("🆕 New features: Module, Cache, Theme & Main Menu management", file=sys.stderr)
             else:
                 print(f"❌ API test failed: {result.get('error')}", file=sys.stderr)
                 return
@@ -447,8 +640,8 @@ async def main():
         return
     
     # Run server
-    print("🚀 Starting PrestaShop MCP server with proper XML integration...", file=sys.stderr)
-    print("✅ Server ready with unified product API, XML support, and full CRUD operations", file=sys.stderr)
+    print("🚀 Starting Enhanced PrestaShop MCP server...", file=sys.stderr)
+    print("✅ Server ready with full CRUD operations + Module/Cache/Theme management", file=sys.stderr)
     
     async with stdio_server() as (read_stream, write_stream):
         await server.run(
@@ -456,7 +649,7 @@ async def main():
             write_stream,
             InitializationOptions(
                 server_name="prestashop-mcp",
-                server_version="2.1.0",
+                server_version="3.0.0",
                 capabilities=server.get_capabilities(
                     notification_options=NotificationOptions(),
                     experimental_capabilities={},

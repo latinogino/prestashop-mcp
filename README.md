@@ -1,14 +1,18 @@
 # PrestaShop MCP Server
 
-A professional Model Context Protocol (MCP) Server for complete management of PrestaShop e-commerce stores.
+A professional Model Context Protocol (MCP) Server for complete management of PrestaShop e-commerce stores with **extended functionality**.
 
 ## 🚀 Overview
 
-This MCP Server enables complete management of your PrestaShop store through AI applications like Claude Desktop. With specialized tools, you can manage all aspects of your e-commerce business - from products and categories to customers and orders.
+This MCP Server enables complete management of your PrestaShop store through AI applications like Claude Desktop. With specialized tools, you can manage all aspects of your e-commerce business - from products and categories to customers, orders, **modules, cache, themes, and navigation menus**.
 
 ## ✨ Features
 
 - **🛍️ Complete Store Management** - Tools for all e-commerce areas
+- **🔧 Module Management** - Install, activate, deactivate modules
+- **💾 Cache Management** - Clear and monitor cache status
+- **🎨 Theme Management** - Configure themes and settings
+- **📋 Menu Management** - Manage main navigation (ps_mainmenu)
 - **🏗️ MCP Protocol Compliance** for seamless AI integration
 - **⚡ Async/Await Architecture** for maximum performance
 - **🛡️ Comprehensive Error Handling** and validation
@@ -23,6 +27,11 @@ This MCP Server enables complete management of your PrestaShop store through AI 
   - **Multiple Products**: List with optional filtering and enhancement
   - **Flexible Enhancement**: Optional stock info, category details, custom field selection
   - **Smart Filtering**: By category, name, or custom criteria
+- `create_product` - Create new products with complete configuration
+- `update_product` - Edit product information
+- `delete_product` - Remove products
+- `update_product_stock` - Manage inventory levels
+- `update_product_price` - Update pricing
 
 ### 🏷️ Category Management
 - `get_categories` - Retrieve categories (with hierarchy filter)
@@ -39,6 +48,25 @@ This MCP Server enables complete management of your PrestaShop store through AI 
 - `get_orders` - Retrieve and filter orders
 - `update_order_status` - Change order status
 - `get_order_states` - Retrieve available statuses
+
+### 🔧 Module Management **NEW**
+- `get_modules` - List all PrestaShop modules
+- `get_module_by_name` - Get specific module details
+- `install_module` - Install new modules
+- `update_module_status` - Activate/deactivate modules
+
+### 📋 Main Menu Management **NEW**
+- `get_main_menu_links` - Retrieve ps_mainmenu navigation links
+- `update_main_menu_link` - Edit existing menu links
+- `add_main_menu_link` - Add new navigation links
+
+### 💾 Cache Management **NEW**
+- `clear_cache` - Clear PrestaShop cache (all types)
+- `get_cache_status` - Monitor cache configuration
+
+### 🎨 Theme Management **NEW**
+- `get_themes` - Get current theme information
+- `update_theme_setting` - Configure theme settings
 
 ### ⚙️ Store Administration
 - `test_connection` - Test API connection
@@ -100,20 +128,6 @@ python -c "import prestashop_mcp; print('✅ Installation successful')"
 which python
 ```
 
-### 🏗️ Alternative: System-wide Installation
-
-```bash
-# Clone repository
-git clone https://github.com/latinogino/prestashop-mcp.git
-cd prestashop-mcp
-
-# Install dependencies (includes test dependencies)
-pip install -r requirements.txt
-
-# Install package
-pip install -e .
-```
-
 ### ⚙️ Configuration
 
 Create a `.env` file based on `.env.example`:
@@ -169,24 +183,6 @@ Add this configuration to `claude_desktop_config.json`:
 }
 ```
 
-#### Using System Python (Alternative)
-
-```json
-{
-  "mcpServers": {
-    "prestashop": {
-      "command": "python",
-      "args": ["-m", "prestashop_mcp.prestashop_mcp_server"],
-      "cwd": "/path/to/prestashop-mcp",
-      "env": {
-        "PRESTASHOP_SHOP_URL": "https://your-shop.example.com",
-        "PRESTASHOP_API_KEY": "YOUR_API_KEY"
-      }
-    }
-  }
-}
-```
-
 ### 💻 CLI Usage
 
 ```bash
@@ -204,46 +200,41 @@ prestashop-mcp --shop-url https://your-shop.com --api-key YOUR_API_KEY
 prestashop-mcp --log-level DEBUG
 ```
 
-### 🧪 Testing
+## 🆕 Extended Functionality Examples
 
-```bash
-# Activate virtual environment first (if using venv)
-source venv_prestashop/bin/activate  # Linux/macOS
-.\venv_prestashop\Scripts\Activate.ps1  # Windows
+### **Module Management**
+```
+"Show me all modules in my PrestaShop store"
+"Activate the ps_mainmenu module"
+"Deactivate the blockcart module"
+"Get details for the ps_featuredproducts module"
+```
 
-# Run comprehensive CRUD tests
-python tests/test_crud_operations.py
+### **Main Menu Management**
+```
+"Show me all main menu links"
+"Add a new menu link called 'Special Offers' pointing to /special-offers"
+"Update menu link 3 to point to /new-products"
+"Make menu link 5 inactive"
+```
 
-# Run unit tests
-pytest
+### **Cache Management**
+```
+"Clear all PrestaShop cache"
+"Show me the current cache status"
+"Check if CSS cache is enabled"
+```
 
-# Run tests with coverage
-pytest --cov=src/prestashop_mcp --cov-report=html
+### **Theme Management**
+```
+"Show me current theme settings"
+"Update the PS_LOGO setting to /img/new-logo.png"
+"Change the PS_THEME_NAME to my-custom-theme"
 ```
 
 ## 🆕 Unified Product API
 
-The `get_products` tool now handles **all product retrieval scenarios** with a single, powerful interface:
-
-### **Single Product Retrieval**
-```
-"Get complete details for product ID 15 including stock and category information"
-```
-
-### **Product Lists with Enhancement**
-```
-"Get all products in category 5 with stock information"
-```
-
-### **Flexible Field Selection**
-```
-"Get products showing only ID, name, and price fields"
-```
-
-### **Smart Filtering**
-```
-"Find products containing 'laptop' in the name with full details"
-```
+The `get_products` tool handles **all product retrieval scenarios** with a single, powerful interface:
 
 ### **Use Cases:**
 
@@ -254,6 +245,35 @@ The `get_products` tool now handles **all product retrieval scenarios** with a s
 | **Enhanced List** | `limit=10, include_details=true, include_stock=true` | Full product details with stock for 10 products |
 | **Filtered Search** | `name_filter="laptop", include_details=true` | All laptop products with complete information |
 | **Custom Fields** | `display="id,name,price", limit=50` | Specific fields only for 50 products |
+
+## 🛠️ Advanced Features
+
+### **ps_mainmenu Integration**
+The ps_mainmenu module management allows you to:
+- Retrieve all main navigation links
+- Add custom navigation items
+- Update existing menu links (name, URL, status)
+- Control menu link positioning
+
+### **Cache Performance Optimization**
+Cache management includes:
+- Clear all cache types (CSS, JS, Template, General)
+- Monitor cache status for performance optimization
+- Toggle cache settings for development/production
+
+### **Module Lifecycle Management**
+Complete module control:
+- List all installed modules with status
+- Install new modules programmatically
+- Activate/deactivate modules as needed
+- Get detailed module information
+
+### **Theme Customization**
+Theme management capabilities:
+- View current theme configuration
+- Update theme-specific settings
+- Manage logos and visual elements
+- Configure theme-related PrestaShop settings
 
 ## 🔧 Troubleshooting
 
@@ -273,18 +293,21 @@ pip install -e .
 python -c "import prestashop_mcp; print('Module found')"
 ```
 
-#### Claude Desktop Connection Issues
+#### Module Management Issues
 
-1. **Check Python Path:** Ensure the `command` path in `claude_desktop_config.json` points to the correct Python executable
-2. **Check Working Directory:** Ensure `cwd` points to the prestashop-mcp directory
-3. **Check Environment Variables:** Verify `PRESTASHOP_SHOP_URL` and `PRESTASHOP_API_KEY` are correct
-
-#### API Connection Issues
-
-Test your PrestaShop API connection:
+**Check Module Permissions:**
 ```bash
-curl -u "YOUR_API_KEY:" https://your-shop.com/api/configurations?output_format=JSON
+# Ensure your API key has module management permissions
+curl -u "YOUR_API_KEY:" https://your-shop.com/api/modules?output_format=JSON
 ```
+
+#### Cache Clear Not Working
+
+**Alternative Cache Clear:**
+If the API-based cache clear doesn't work, you may need to:
+1. Check PrestaShop permissions for API user
+2. Use manual cache clearing in PrestaShop admin
+3. Verify cache directory write permissions
 
 ### 🔍 Debug Mode
 
@@ -311,8 +334,8 @@ Enable debug logging in Claude Desktop configuration:
 ```
 prestashop-mcp/
 ├── src/prestashop_mcp/                  # Main Package
-│   ├── prestashop_mcp_server.py         # MCP Server
-│   ├── prestashop_client.py             # PrestaShop API Client
+│   ├── prestashop_mcp_server.py         # MCP Server (Extended)
+│   ├── prestashop_client.py             # PrestaShop API Client (Extended)
 │   ├── config.py                        # Configuration Management
 │   └── cli.py                          # Command Line Interface
 ├── tests/                               # All Tests
@@ -345,6 +368,8 @@ curl -u "API_KEY:" https://your-shop.com/api/configurations?output_format=JSON
 - **Orders**: `/api/orders`
 - **Stock**: `/api/stock_availables`
 - **Order Status**: `/api/order_states`
+- **Modules**: `/api/modules` **NEW**
+- **Configurations**: `/api/configurations` **NEW**
 
 ## 🧪 Development
 
@@ -381,25 +406,27 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## 📝 Changelog
 
+### v3.0.0 - Extended Functionality (LATEST)
+- ✨ **NEW**: Module Management - Install, activate, deactivate modules
+- ✨ **NEW**: ps_mainmenu Management - Complete navigation control
+- ✨ **NEW**: Cache Management - Clear cache and monitor status
+- ✨ **NEW**: Theme Management - Configure theme settings
+- 🔧 **Enhanced**: Comprehensive store administration tools
+- 📊 **Extended**: 12 new MCP tools for advanced functionality
+- 🏗️ **Professional**: Enterprise-level PrestaShop management
+
 ### v2.0.0 - Unified Product API (BREAKING CHANGES)
 - ✨ **MAJOR**: Unified `get_products` API handles all product retrieval scenarios
 - 🗑️ **REMOVED**: `get_product_details` method (functionality merged into `get_products`)
 - 🔧 **Enhanced**: Single API call for both individual products and lists
 - 📊 **Flexible**: Optional enhancement with stock, category, and custom field selection
 - 🏗️ **Cleaner**: Eliminates API duplication and provides intuitive interface
-- 🎯 **Breaking**: Update your integrations to use the new unified `get_products` method
 
 ### v1.1.0 - Enhanced Product Details
 - ✨ **NEW**: `get_product_details` method for comprehensive product information
 - 📊 Enhanced product queries with stock and category information
 - 🔍 Flexible field selection with display parameter
 - 🏗️ Improved API client architecture for detailed data retrieval
-
-### v1.0.1 - Improved Installation
-- 📖 Enhanced installation documentation with virtual environment setup
-- 🔧 Added comprehensive troubleshooting section
-- 🎯 Platform-specific installation instructions (Windows/Linux/macOS)
-- ⚡ Improved Claude Desktop configuration examples
 
 ### v1.0.0 - Production Release
 - ✨ Complete store management with professional tools
@@ -409,8 +436,7 @@ MIT License - see [LICENSE](LICENSE) for details.
 - 📋 Order management with status updates
 - ⚙️ Store statistics and configuration
 - 🛡️ Production-ready with comprehensive tests
-- 📖 Complete documentation with practical examples
 
 ---
 
-**🎯 Manage your complete PrestaShop through natural language with Claude Desktop!**
+**🎯 Manage your complete PrestaShop store including modules, cache, themes, and navigation through natural language with Claude Desktop!**

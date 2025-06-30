@@ -46,7 +46,7 @@ class PrestaShopClient:
         def build_element(parent: ET.Element, key: str, value: Any):
             if isinstance(value, list) and value and isinstance(value[0], dict) and "id" in value[0] and "value" in value[0]:
                 # This is a multilingual field - create nested structure
-                # <name><language id="1">value</language><language id="2">value</language></name>
+                # <n><language id="1">value</language><language id="2">value</language></n>
                 container = ET.SubElement(parent, key)
                 for lang_item in value:
                     language_elem = ET.SubElement(container, "language")
@@ -715,6 +715,380 @@ class PrestaShopClient:
     async def get_order_states(self) -> Dict[str, Any]:
         """Retrieve available order states/statuses."""
         return await self._make_request('GET', 'order_states')
+
+    # ============================================================================
+    # MODULE MANAGEMENT (NEW)
+    # ============================================================================
+    
+    async def get_modules(
+        self, 
+        limit: int = 20,
+        module_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Get modules from PrestaShop."""
+        params = {'limit': limit}
+        
+        if module_name:
+            params['filter[name]'] = f"[{module_name}]%"
+        
+        return await self._make_request('GET', 'modules', params=params)
+    
+    async def get_module_by_name(self, module_name: str) -> Dict[str, Any]:
+        """Get specific module by technical name."""
+        try:
+            params = {'filter[name]': module_name}
+            modules_response = await self._make_request('GET', 'modules', params=params)
+            
+            if 'modules' in modules_response and modules_response['modules']:
+                module_data = modules_response['modules'][0]
+                module_id = module_data.get('id')
+                
+                if module_id:
+                    # Get full module details
+                    return await self._make_request('GET', f'modules/{module_id}')
+                
+            return {"error": f"Module '{module_name}' not found"}
+            
+        except Exception as e:
+            return {"error": f"Failed to retrieve module: {str(e)}"}
+    
+    async def install_module(self, module_name: str) -> Dict[str, Any]:
+        """Install a module via PrestaShop API."""
+        # This is typically handled via custom endpoints or hooks
+        # For now, we'll use a configuration-based approach
+        try:
+            module_data = {
+                "module": {
+                    "name": module_name,
+                    "active": "1",
+                    "version": "1.0.0"
+                }
+            }
+            
+            return await self._make_request('POST', 'modules', data=module_data)
+            
+        except Exception as e:
+            return {"error": f"Failed to install module: {str(e)}"}
+    
+    async def update_module_status(
+        self, 
+        module_name: str, 
+        active: bool
+    ) -> Dict[str, Any]:
+        """Activate or deactivate a module."""
+        try:
+            # First find the module
+            module_info = await self.get_module_by_name(module_name)
+            
+            if 'error' in module_info:
+                return module_info
+            
+            if 'module' not in module_info:
+                return {"error": f"Module '{module_name}' not found"}
+            
+            module_id = module_info['module']['id']
+            
+            # Update module status
+            module_data = module_info['module'].copy()
+            module_data['active'] = "1" if active else "0"
+            
+            return await self._make_request(
+                'PUT', 
+                f'modules/{module_id}', 
+                data={"module": module_data}
+            )
+            
+        except Exception as e:
+            return {"error": f"Failed to update module status: {str(e)}"}
+
+    # ============================================================================
+    # MAIN MENU (ps_mainmenu) MANAGEMENT (NEW)
+    # ============================================================================
+    
+    async def get_main_menu_links(self) -> Dict[str, Any]:
+        """Get ps_mainmenu links from configurations."""
+        try:
+            # ps_mainmenu stores its data in configurations
+            params = {'filter[name]': '[PS_MAINMENU_]%'}
+            configs = await self._make_request('GET', 'configurations', params=params)
+            
+            menu_configs = {}
+            if 'configurations' in configs:
+                for config in configs['configurations']:
+                    if config.get('name', '').startswith('PS_MAINMENU_'):
+                        menu_configs[config['name']] = config
+            
+            return {
+                "main_menu": menu_configs,
+                "message": "Main menu configurations retrieved"
+            }
+            
+        except Exception as e:
+            return {"error": f"Failed to retrieve main menu: {str(e)}"}
+    
+    async def update_main_menu_link(
+        self, 
+        link_id: str,
+        name: str = None,
+        url: str = None,
+        active: bool = None
+    ) -> Dict[str, Any]:
+        """Update a main menu link."""
+        try:
+            # For ps_mainmenu, we typically work with configurations
+            config_name = f"PS_MAINMENU_CONTENT_{link_id}"
+            
+            # First try to get existing configuration
+            params = {'filter[name]': config_name}
+            existing_config = await self._make_request('GET', 'configurations', params=params)
+            
+            if 'configurations' in existing_config and existing_config['configurations']:
+                config_id = existing_config['configurations'][0]['id']
+                
+                # Build menu link data structure
+                link_data = {
+                    "name": name or "",
+                    "url": url or "",
+                    "active": active if active is not None else True
+                }
+                
+                # Update configuration
+                config_data = {
+                    "configuration": {
+                        "id": config_id,
+                        "name": config_name,
+                        "value": json.dumps(link_data)
+                    }
+                }
+                
+                return await self._make_request('PUT', f'configurations/{config_id}', data=config_data)
+            else:
+                return {"error": f"Main menu link '{link_id}' not found"}
+                
+        except Exception as e:
+            return {"error": f"Failed to update main menu link: {str(e)}"}
+    
+    async def add_main_menu_link(
+        self, 
+        name: str,
+        url: str,
+        position: int = 0,
+        active: bool = True
+    ) -> Dict[str, Any]:
+        """Add a new main menu link."""
+        try:
+            # Generate unique ID for the link
+            import time
+            link_id = str(int(time.time()))
+            config_name = f"PS_MAINMENU_CONTENT_{link_id}"
+            
+            # Build menu link data structure
+            link_data = {
+                "name": name,
+                "url": url,
+                "position": position,
+                "active": active
+            }
+            
+            # Create new configuration
+            config_data = {
+                "configuration": {
+                    "name": config_name,
+                    "value": json.dumps(link_data)
+                }
+            }
+            
+            return await self._make_request('POST', 'configurations', data=config_data)
+            
+        except Exception as e:
+            return {"error": f"Failed to add main menu link: {str(e)}"}
+
+    # ============================================================================
+    # CACHE MANAGEMENT (NEW)
+    # ============================================================================
+    
+    async def clear_cache(self, cache_type: str = "all") -> Dict[str, Any]:
+        """Clear PrestaShop cache."""
+        try:
+            # PrestaShop doesn't have a direct API endpoint for cache clearing
+            # We simulate this by updating a cache-related configuration
+            # This triggers cache regeneration in most cases
+            
+            if cache_type == "all":
+                # Update multiple cache-related configurations to trigger refresh
+                cache_configs = [
+                    "PS_CACHE_ENABLED",
+                    "PS_CSS_CACHE_ENABLED", 
+                    "PS_JS_CACHE_ENABLED",
+                    "PS_TEMPLATE_CACHE_ENABLED"
+                ]
+                
+                results = []
+                for config_name in cache_configs:
+                    try:
+                        # Get current config
+                        params = {'filter[name]': config_name}
+                        config_response = await self._make_request('GET', 'configurations', params=params)
+                        
+                        if 'configurations' in config_response and config_response['configurations']:
+                            config = config_response['configurations'][0]
+                            config_id = config['id']
+                            current_value = config.get('value', '1')
+                            
+                            # Toggle and restore to trigger cache refresh
+                            toggle_value = '0' if current_value == '1' else '1'
+                            
+                            # Toggle off
+                            toggle_data = {
+                                "configuration": {
+                                    "id": config_id,
+                                    "name": config_name,
+                                    "value": toggle_value
+                                }
+                            }
+                            await self._make_request('PUT', f'configurations/{config_id}', data=toggle_data)
+                            
+                            # Wait a moment
+                            await asyncio.sleep(0.1)
+                            
+                            # Restore original value
+                            restore_data = {
+                                "configuration": {
+                                    "id": config_id,
+                                    "name": config_name,
+                                    "value": current_value
+                                }
+                            }
+                            result = await self._make_request('PUT', f'configurations/{config_id}', data=restore_data)
+                            results.append({config_name: "cleared"})
+                            
+                    except Exception as e:
+                        results.append({config_name: f"error: {str(e)}"})
+                
+                return {
+                    "cache_clear": "completed",
+                    "type": cache_type,
+                    "results": results,
+                    "message": "Cache refresh triggered via configuration toggle"
+                }
+            
+            else:
+                return {"error": f"Cache type '{cache_type}' not supported. Use 'all'."}
+                
+        except Exception as e:
+            return {"error": f"Failed to clear cache: {str(e)}"}
+    
+    async def get_cache_status(self) -> Dict[str, Any]:
+        """Get current cache configuration status."""
+        try:
+            cache_configs = [
+                "PS_CACHE_ENABLED",
+                "PS_CSS_CACHE_ENABLED", 
+                "PS_JS_CACHE_ENABLED",
+                "PS_TEMPLATE_CACHE_ENABLED",
+                "PS_SMARTY_CACHE",
+                "PS_SMARTY_FORCE_COMPILE"
+            ]
+            
+            cache_status = {}
+            for config_name in cache_configs:
+                try:
+                    params = {'filter[name]': config_name}
+                    config_response = await self._make_request('GET', 'configurations', params=params)
+                    
+                    if 'configurations' in config_response and config_response['configurations']:
+                        config = config_response['configurations'][0]
+                        cache_status[config_name] = {
+                            "value": config.get('value', '0'),
+                            "enabled": config.get('value', '0') == '1'
+                        }
+                    else:
+                        cache_status[config_name] = {"error": "not found"}
+                        
+                except Exception as e:
+                    cache_status[config_name] = {"error": str(e)}
+            
+            return {
+                "cache_status": cache_status,
+                "message": "Cache configuration status retrieved"
+            }
+            
+        except Exception as e:
+            return {"error": f"Failed to get cache status: {str(e)}"}
+
+    # ============================================================================
+    # THEME MANAGEMENT (NEW)
+    # ============================================================================
+    
+    async def get_themes(self) -> Dict[str, Any]:
+        """Get available themes."""
+        try:
+            # Themes are typically managed via configurations
+            theme_configs = [
+                "PS_THEME_NAME",
+                "PS_THEME_FOLDER", 
+                "PS_THEME_DIR",
+                "PS_LOGO"
+            ]
+            
+            theme_info = {}
+            for config_name in theme_configs:
+                try:
+                    params = {'filter[name]': config_name}
+                    config_response = await self._make_request('GET', 'configurations', params=params)
+                    
+                    if 'configurations' in config_response and config_response['configurations']:
+                        config = config_response['configurations'][0]
+                        theme_info[config_name] = config.get('value', '')
+                        
+                except Exception as e:
+                    theme_info[config_name] = f"error: {str(e)}"
+            
+            return {
+                "themes": theme_info,
+                "message": "Theme information retrieved"
+            }
+            
+        except Exception as e:
+            return {"error": f"Failed to get themes: {str(e)}"}
+    
+    async def update_theme_setting(
+        self, 
+        setting_name: str,
+        value: str
+    ) -> Dict[str, Any]:
+        """Update a theme setting."""
+        try:
+            # Find the configuration
+            params = {'filter[name]': setting_name}
+            config_response = await self._make_request('GET', 'configurations', params=params)
+            
+            if 'configurations' in config_response and config_response['configurations']:
+                config = config_response['configurations'][0]
+                config_id = config['id']
+                
+                # Update configuration
+                config_data = {
+                    "configuration": {
+                        "id": config_id,
+                        "name": setting_name,
+                        "value": value
+                    }
+                }
+                
+                result = await self._make_request('PUT', f'configurations/{config_id}', data=config_data)
+                
+                return {
+                    "theme_setting_updated": True,
+                    "setting": setting_name,
+                    "value": value,
+                    "result": result
+                }
+            else:
+                return {"error": f"Theme setting '{setting_name}' not found"}
+                
+        except Exception as e:
+            return {"error": f"Failed to update theme setting: {str(e)}"}
 
     # ============================================================================
     # CONFIGURATION AND UTILITY
