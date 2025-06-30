@@ -437,6 +437,58 @@ MIT License - see [LICENSE](LICENSE) for details.
 - ⚙️ Store statistics and configuration
 - 🛡️ Production-ready with comprehensive tests
 
+## 🏗️ Project Status & Development Notes
+
+### 📋 **Maintenance Status**
+
+**⚠️ Limited Maintenance**: Ich plane zurzeit nicht, dieses Repository aktiv zu maintainen. Der PrestaShop MCP Server war vielmehr ein Test gewesen, wie ein MCP Server erstellt werden kann ohne nennenswerte eigene Programmiererfahrung und weitestgehend fußend auf LLMs und MCPs.
+
+### 🧪 **Experimental Nature**
+
+Dieses Projekt diente als **Proof of Concept** für:
+- **LLM-Assisted Development**: Entwicklung komplexer Software-Integrations-Lösungen mit minimaler manueller Programmierung
+- **MCP Server Architecture**: Praktische Implementierung der Model Context Protocol Spezifikation
+- **AI-Driven E-Commerce Integration**: Automatisierte PrestaShop-Verwaltung durch natürliche Sprache
+- **No-Code/Low-Code Ansatz**: Maximale Nutzung von KI-Tools für professionelle Software-Entwicklung
+
+### 🐳 **Geplante Docker-Distribution**
+
+**Kommende Features:**
+Es ist noch geplant, den ganzen MCP Server als **fertigen Docker Container** bereitzustellen, sobald alle Funktionen wie gewünscht implementiert sind.
+
+**Vorteile der Docker-Bereitstellung:**
+- ✅ **Zero-Configuration Setup**: Einfache Installation ohne komplexe Python-Umgebung
+- ✅ **Konsistente Umgebung**: Identisches Verhalten auf allen Plattformen
+- ✅ **Isolierte Dependencies**: Keine Konflikte mit lokalen Python-Installationen
+- ✅ **Production-Ready**: Optimiert für produktive Nutzung
+- ✅ **Auto-Updates**: Einfache Aktualisierung auf neue Versionen
+
+**Geplante Docker-Nutzung:**
+```bash
+# Zukünftige Docker-Installation (geplant)
+docker pull latinogino/prestashop-mcp:latest
+docker run -e PRESTASHOP_SHOP_URL=https://your-shop.com \
+           -e PRESTASHOP_API_KEY=your-key \
+           -p 8080:8080 \
+           latinogino/prestashop-mcp:latest
+```
+
+### 💡 **Community & Contributions**
+
+Während aktive Wartung begrenzt ist, sind **Community Contributions** willkommen:
+- 🐛 **Bug Reports**: Issues können gerne gemeldet werden
+- ✨ **Feature Requests**: Vorschläge für Verbesserungen
+- 🔧 **Pull Requests**: Community-getriebene Entwicklung
+- 📖 **Documentation**: Verbesserungen der Dokumentation
+
+### 🎯 **Verwendungszweck**
+
+Dieses Repository demonstriert erfolgreich:
+- Vollständige PrestaShop API-Integration via MCP
+- Professionelle Software-Architektur ohne traditionelle Programmiererfahrung  
+- Praktische Anwendung von LLMs in der Software-Entwicklung
+- Funktionsfähige E-Commerce-Automatisierung durch KI
+
 ---
 
 **🎯 Manage your complete PrestaShop store including modules, cache, themes, and navigation through natural language with Claude Desktop!**
