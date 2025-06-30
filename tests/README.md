@@ -14,6 +14,19 @@
 # Navigate to project directory
 cd prestashop-mcp
 
+# Activate virtual environment
+.\venv_prestashop\Scripts\Activate.ps1
+
+# Update code from repository
+git pull origin main
+
+# Install/update the package
+pip install -e .
+
+# Install test dependencies
+cd tests
+pip install -r requirements.txt
+
 # Update code from repository
 git pull origin main
 
