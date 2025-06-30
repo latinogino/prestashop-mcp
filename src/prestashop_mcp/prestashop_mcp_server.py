@@ -357,6 +357,59 @@ async def handle_list_tools():
             }
         ),
         
+        # Navigation Tree (PS_MENU_TREE) Management
+        Tool(
+            name="get_menu_tree",
+            description="Get PS_MENU_TREE configuration - categories displayed in main navigation",
+            inputSchema={"type": "object", "properties": {}, "additionalProperties": False}
+        ),
+        Tool(
+            name="add_category_to_menu",
+            description="Add a category to the main navigation menu tree",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "category_id": {"type": "string", "description": "Category ID to add to navigation"},
+                    "position": {"type": "integer", "description": "Position in menu (optional, defaults to end)"}
+                },
+                "required": ["category_id"],
+                "additionalProperties": False
+            }
+        ),
+        Tool(
+            name="remove_category_from_menu",
+            description="Remove a category from the main navigation menu tree",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "category_id": {"type": "string", "description": "Category ID to remove from navigation"}
+                },
+                "required": ["category_id"],
+                "additionalProperties": False
+            }
+        ),
+        Tool(
+            name="update_menu_tree",
+            description="Update the complete menu tree with new category order",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "category_ids": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Array of category IDs in desired order"
+                    }
+                },
+                "required": ["category_ids"],
+                "additionalProperties": False
+            }
+        ),
+        Tool(
+            name="get_menu_tree_status",
+            description="Get comprehensive menu tree status including both custom links and category navigation",
+            inputSchema={"type": "object", "properties": {}, "additionalProperties": False}
+        ),
+        
         # Cache Management
         Tool(
             name="clear_cache",
@@ -588,6 +641,29 @@ async def handle_call_tool(name: str, arguments: dict):
                     active=arguments.get('active', True)
                 )
             
+            # Navigation Tree Management
+            elif name == "get_menu_tree":
+                result = await client.get_menu_tree()
+            
+            elif name == "add_category_to_menu":
+                result = await client.add_category_to_menu(
+                    category_id=arguments['category_id'],
+                    position=arguments.get('position')
+                )
+            
+            elif name == "remove_category_from_menu":
+                result = await client.remove_category_from_menu(
+                    category_id=arguments['category_id']
+                )
+            
+            elif name == "update_menu_tree":
+                result = await client.update_menu_tree(
+                    category_ids=arguments['category_ids']
+                )
+            
+            elif name == "get_menu_tree_status":
+                result = await client.get_menu_tree_status()
+            
             # Cache Management
             elif name == "clear_cache":
                 result = await client.clear_cache(
@@ -631,7 +707,7 @@ async def main():
             result = await client.get_configurations()
             if 'error' not in result:
                 print("✅ API connection successful with extended functionality", file=sys.stderr)
-                print("🆕 New features: Module, Cache, Theme & Main Menu management", file=sys.stderr)
+                print("🆕 New features: Module, Cache, Theme & Navigation Tree management", file=sys.stderr)
             else:
                 print(f"❌ API test failed: {result.get('error')}", file=sys.stderr)
                 return
@@ -641,7 +717,7 @@ async def main():
     
     # Run server
     print("🚀 Starting Enhanced PrestaShop MCP server...", file=sys.stderr)
-    print("✅ Server ready with full CRUD operations + Module/Cache/Theme management", file=sys.stderr)
+    print("✅ Server ready with full CRUD operations + Navigation Tree management", file=sys.stderr)
     
     async with stdio_server() as (read_stream, write_stream):
         await server.run(
@@ -649,7 +725,7 @@ async def main():
             write_stream,
             InitializationOptions(
                 server_name="prestashop-mcp",
-                server_version="3.0.0",
+                server_version="4.0.0",
                 capabilities=server.get_capabilities(
                     notification_options=NotificationOptions(),
                     experimental_capabilities={},

@@ -915,6 +915,236 @@ class PrestaShopClient:
             return {"error": f"Failed to add main menu link: {str(e)}"}
 
     # ============================================================================
+    # NAVIGATION TREE (PS_MENU_TREE) MANAGEMENT (NEW)
+    # ============================================================================
+    
+    async def get_menu_tree(self) -> Dict[str, Any]:
+        """Get PS_MENU_TREE configuration - categories displayed in main navigation."""
+        try:
+            # Get PS_MENU_TREE configuration
+            params = {'filter[name]': 'PS_MENU_TREE'}
+            config_response = await self._make_request('GET', 'configurations', params=params)
+            
+            if 'configurations' in config_response and config_response['configurations']:
+                menu_tree_config = config_response['configurations'][0]
+                tree_value = menu_tree_config.get('value', '')
+                
+                # Parse tree structure - format is usually comma-separated category IDs like "CAT3,CAT6,CAT31"
+                category_ids = []
+                if tree_value:
+                    # Remove CAT prefix and split by comma
+                    categories = tree_value.split(',')
+                    for cat in categories:
+                        cat = cat.strip()
+                        if cat.startswith('CAT'):
+                            category_ids.append(cat[3:])  # Remove "CAT" prefix
+                        elif cat.isdigit():
+                            category_ids.append(cat)
+                
+                # Get detailed information for each category in the tree
+                category_details = []
+                for cat_id in category_ids:
+                    try:
+                        category_response = await self._make_request('GET', f'categories/{cat_id}')
+                        if 'category' in category_response:
+                            category_details.append({
+                                "id": cat_id,
+                                "name": category_response['category'].get('name', []),
+                                "active": category_response['category'].get('active', '0') == '1',
+                                "url": f"index.php?id_category={cat_id}&controller=category"
+                            })
+                    except Exception as e:
+                        logging.warning(f"Could not retrieve category {cat_id}: {e}")
+                        category_details.append({
+                            "id": cat_id,
+                            "error": f"Category not found: {str(e)}"
+                        })
+                
+                return {
+                    "menu_tree": {
+                        "raw_value": tree_value,
+                        "category_ids": category_ids,
+                        "categories": category_details,
+                        "config_id": menu_tree_config.get('id'),
+                        "config_name": menu_tree_config.get('name')
+                    },
+                    "count": len(category_ids),
+                    "message": f"Found {len(category_ids)} categories in navigation tree"
+                }
+            else:
+                return {
+                    "menu_tree": {
+                        "raw_value": "",
+                        "category_ids": [],
+                        "categories": []
+                    },
+                    "count": 0,
+                    "message": "PS_MENU_TREE configuration not found"
+                }
+                
+        except Exception as e:
+            return {"error": f"Failed to retrieve menu tree: {str(e)}"}
+    
+    async def add_category_to_menu(
+        self,
+        category_id: str,
+        position: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """Add a category to the main navigation menu tree."""
+        try:
+            # First get current menu tree
+            current_tree = await self.get_menu_tree()
+            
+            if 'error' in current_tree:
+                return current_tree
+            
+            current_categories = current_tree['menu_tree']['category_ids']
+            
+            # Check if category already exists
+            if category_id in current_categories:
+                return {
+                    "error": f"Category {category_id} is already in the menu tree",
+                    "current_tree": current_categories
+                }
+            
+            # Verify category exists
+            try:
+                category_response = await self._make_request('GET', f'categories/{category_id}')
+                if 'category' not in category_response:
+                    return {"error": f"Category {category_id} not found"}
+            except Exception:
+                return {"error": f"Category {category_id} not found or inaccessible"}
+            
+            # Add to current list
+            new_categories = current_categories.copy()
+            if position is not None and 0 <= position <= len(new_categories):
+                new_categories.insert(position, category_id)
+            else:
+                new_categories.append(category_id)
+            
+            # Update menu tree
+            return await self.update_menu_tree(new_categories)
+            
+        except Exception as e:
+            return {"error": f"Failed to add category to menu: {str(e)}"}
+    
+    async def remove_category_from_menu(self, category_id: str) -> Dict[str, Any]:
+        """Remove a category from the main navigation menu tree."""
+        try:
+            # First get current menu tree
+            current_tree = await self.get_menu_tree()
+            
+            if 'error' in current_tree:
+                return current_tree
+            
+            current_categories = current_tree['menu_tree']['category_ids']
+            
+            # Check if category exists in tree
+            if category_id not in current_categories:
+                return {
+                    "error": f"Category {category_id} is not in the menu tree",
+                    "current_tree": current_categories
+                }
+            
+            # Remove from list
+            new_categories = [cat for cat in current_categories if cat != category_id]
+            
+            # Update menu tree
+            return await self.update_menu_tree(new_categories)
+            
+        except Exception as e:
+            return {"error": f"Failed to remove category from menu: {str(e)}"}
+    
+    async def update_menu_tree(self, category_ids: List[str]) -> Dict[str, Any]:
+        """Update the complete menu tree with new category order."""
+        try:
+            # Validate all category IDs
+            valid_categories = []
+            for cat_id in category_ids:
+                if cat_id.isdigit():  # Basic validation
+                    valid_categories.append(cat_id)
+                else:
+                    logging.warning(f"Invalid category ID: {cat_id}")
+            
+            # Build tree value - format: CAT3,CAT6,CAT31
+            tree_value = ','.join([f"CAT{cat_id}" for cat_id in valid_categories])
+            
+            # Get PS_MENU_TREE configuration
+            params = {'filter[name]': 'PS_MENU_TREE'}
+            config_response = await self._make_request('GET', 'configurations', params=params)
+            
+            if 'configurations' in config_response and config_response['configurations']:
+                config = config_response['configurations'][0]
+                config_id = config['id']
+                
+                # Update configuration
+                config_data = {
+                    "configuration": {
+                        "id": config_id,
+                        "name": "PS_MENU_TREE",
+                        "value": tree_value
+                    }
+                }
+                
+                result = await self._make_request('PUT', f'configurations/{config_id}', data=config_data)
+                
+                return {
+                    "menu_tree_updated": True,
+                    "new_tree": tree_value,
+                    "category_ids": valid_categories,
+                    "count": len(valid_categories),
+                    "result": result,
+                    "message": f"Menu tree updated with {len(valid_categories)} categories"
+                }
+            else:
+                # Create new PS_MENU_TREE configuration if it doesn't exist
+                config_data = {
+                    "configuration": {
+                        "name": "PS_MENU_TREE",
+                        "value": tree_value
+                    }
+                }
+                
+                result = await self._make_request('POST', 'configurations', data=config_data)
+                
+                return {
+                    "menu_tree_created": True,
+                    "new_tree": tree_value,
+                    "category_ids": valid_categories,
+                    "count": len(valid_categories),
+                    "result": result,
+                    "message": f"Menu tree created with {len(valid_categories)} categories"
+                }
+                
+        except Exception as e:
+            return {"error": f"Failed to update menu tree: {str(e)}"}
+    
+    async def get_menu_tree_status(self) -> Dict[str, Any]:
+        """Get comprehensive menu tree status including both custom links and category navigation."""
+        try:
+            # Get both menu tree and custom links
+            tree_result = await self.get_menu_tree()
+            links_result = await self.get_main_menu_links()
+            
+            menu_status = {
+                "navigation_tree": tree_result.get('menu_tree', {}),
+                "custom_links": links_result.get('main_menu', {}),
+                "summary": {
+                    "categories_in_nav": tree_result.get('count', 0),
+                    "custom_links_count": links_result.get('count', 0),
+                    "total_menu_items": tree_result.get('count', 0) + links_result.get('count', 0)
+                }
+            }
+            
+            return {
+                "menu_status": menu_status,
+                "message": "Complete menu status retrieved"
+            }
+            
+        except Exception as e:
+            return {"error": f"Failed to get menu status: {str(e)}"}
+
+    # ============================================================================
     # CACHE MANAGEMENT (NEW)
     # ============================================================================
     
